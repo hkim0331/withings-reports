@@ -2,9 +2,10 @@
   (:require
    [babashka.curl :as curl]
    [babashka.pods :as pods]
+   [cheshire.core :as json]
    [clojure.java.shell :refer [sh]]
-   [clojure.tools.logging :as log]
-   [cheshire.core :as json]))
+   [clojure.string :as str]
+   [clojure.tools.logging :as log]))
 
 (pods/load-pod 'org.babashka/mysql "0.1.1")
 (require '[pod.babashka.mysql :as mysql])
@@ -30,6 +31,20 @@
 
 (defn curl-post [url & params]
   (curl/post url {:raw-args (vec (concat ["-b" cookie] params))}))
+
+(defn today []
+  (-> (sh "date" "+%F")
+      :out
+      str/trim-newline))
+
+(defn date-before-today
+  "return today - n date"
+  [n]
+  ())
+
+(comment
+  (today)
+  :rcf)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; login, users
@@ -60,20 +75,33 @@
   users
   :rcf)
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; fetch meas
 (defn fetch-meas
-  "returns [{:meas/measure 81.2} ...]"
+  "returns [{:meas/measure 81.2 :meas/created #inst \"2022-12-11..\"} ...]"
   [id type since]
   (log/info "fetch-meas" id type since)
   (mysql/execute!
    db
-   ["select measure, created from meas where user_id=? and type=? and created >?"
+   ["select measure, created from meas
+     where user_id=? and type=? and created >?"
     id type since]))
+
+(defn fetch-meas-before
+  [id type days]
+  (mysql/execute!
+   db
+   ["select measure from meas
+     where user_id=? and type=? and
+           created > current_timestamp - interval ? day"
+    id type days]))
 
 (comment
   (fetch-meas 51 1 "2022-12-10")
-  )
+  (fetch-meas 16 1 "2022-11-20")
+  (fetch-meas-before 51 1 20)
+  :rcf)
 ;; (defn weights
 ;;   ""
 ;;   [id since])
