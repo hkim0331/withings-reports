@@ -1,9 +1,20 @@
 (ns reports
   (:require
    [babashka.curl :as curl]
-   [babashka.pods :as [pods]]
+   [babashka.pods :as pods]
+   [clojure.java.shell :refer [sh]]
    [clojure.tools.logging :as log]
    [cheshire.core :as json]))
+
+(pods/load-pod 'org.babashka/mysql "0.1.1")
+(require '[pod.babashka.mysql :as mysql])
+
+(def db {:dbtype   "mysql"
+         :host     "localhost"
+         :port     3306
+         :dbname   "withings"
+         :user     (System/getenv "MYSQL_USER")
+         :password (System/getenv "MYSQL_PASSWORD")})
 
 (def wc "https://wc.kohhoh.jp")
 (def cookie "cookie.txt")
@@ -11,14 +22,7 @@
 (def admin    (System/getenv "WC_LOGIN"))
 (def password (System/getenv "WC_PASSWORD"))
 
-(pods/load-pod 'org.babashka/mysql "0.1.1")
-(require '[pod.babashka.mysql :as mysql])
-(def db {:dbtype   "mysql"
-         :host     "localhost"
-         :port     3306
-         :dbname   "withings"
-         :user     (System/getenv "MYSQL_USER")
-         :password (System/getenv "MYSQL_PASSWORD")})
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; utils
