@@ -8,7 +8,6 @@
 
 (pods/load-pod 'org.babashka/mysql "0.1.1")
 (require '[pod.babashka.mysql :as mysql])
-
 (def db {:dbtype   "mysql"
          :host     "localhost"
          :port     3306
@@ -22,7 +21,7 @@
 (def admin    (System/getenv "WC_LOGIN"))
 (def password (System/getenv "WC_PASSWORD"))
 
-
+(def users (atom nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; utils
@@ -33,7 +32,7 @@
   (curl/post url {:raw-args (vec (concat ["-b" cookie] params))}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;; login, users
 (defn login
   "login. if success, updates cookie and returns 302."
   []
@@ -46,10 +45,35 @@
    return the users data in json format.
    (fetch-users true) returns only valid users."
   [& valid?]
-  (let [ret (-> (curl-get (str wc "/api/users"))
+  (let [_ (login)
+        ret (-> (curl-get (str wc "/api/users"))
                 :body
                 (json/parse-string true)
                 vec)]
     (if valid?
       (filter :valid ret)
       ret)))
+
+(reset! users (fetch-users true))
+
+(comment
+  users
+  :rcf)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; fetch meas
+(defn fetch-meas
+  "returns [{:meas/measure 81.2} ...]"
+  [id type since]
+  (log/info "fetch-meas" id type since)
+  (mysql/execute!
+   db
+   ["select measure, created from meas where user_id=? and type=? and created >?"
+    id type since]))
+
+(comment
+  (fetch-meas 51 1 "2022-12-10")
+  )
+;; (defn weights
+;;   ""
+;;   [id since])
