@@ -16,12 +16,13 @@
          :user     (System/getenv "MYSQL_USER")
          :password (System/getenv "MYSQL_PASSWORD")})
 
-(def wc (or (System/getenv "WC") "https://wc.kohhoh.jp"))
+(def wc (System/getenv "WC"))
+(def lp (System/getenv "LP"))
 
 (def admin    (System/getenv "WC_LOGIN"))
 (def password (System/getenv "WC_PASSWORD"))
 
-(def cookie "cookie.txt")
+(def cookie "reports.txt")
 
 (def users (atom nil))
 
@@ -30,6 +31,7 @@
 (defn curl-get [url & params]
   (curl/get url {:raw-args (vec (concat ["-b" cookie] params))}))
 
+;; push line-push only
 ;; (defn curl-post [url & params]
 ;;   (curl/post url {:raw-args (vec (concat ["-b" cookie] params))}))
 
@@ -103,53 +105,74 @@
   (fetch-meas-before 16 1 75)
   :rcf)
 
-;; babashka does not catch
-;; java.lang.ArithmeticException: Divide by zero reports
 (defn average
   [xs]
   (/ (reduce + xs) (count xs)))
 
-(comment
-  (try
-    (average [])
-    (catch Exception e (.getMessage e)))
-  :rcf)
+(defn f-to-f [f]
+  (-> f
+      (* 100)
+      int
+      (/ 100.0)))
 
-(defn find-user [n]
-  (first (filter #(= n (:id %)) @users)))
+(f-to-f 3.14159265)
+
+;; (defn find-user [n]
+;;   (first (filter #(= n (:id %)) @users)))
 
 ;; changed type -> types
-(defn make-report
-  "Fetch user `id` data, line-push with comments.
-   returns [[day1 ave1] [day2 ave2] [day3 ave3]]
-   if data lacks, returns [[d \"none\"] ...]"
+(defn fetch-data
+  "Fetch user `id` data.
+   (fetch-data 51 [1 77] [25 75])
+   if data lacks, returns [[d \"none\"] ...]
+   json?"
   [id types days]
-  (for [type types]
-    (cons type
-          (for [d days]
-            (let [xs (fetch-meas-before id type d)]
-              (if (empty? xs)
-                [d "none"]
-                [d (average (map :meas/measure xs))]))))))
+  (cons id
+        (for [type types]
+         (cons type
+                (for [d days]
+                  (let [xs (fetch-meas-before id type d)]
+                    (if (empty? xs)
+                      [d "none"]
+                      [d (-> (map :meas/measure xs)
+                             average
+                             f-to-f)])))))))
 
 (comment
   (try
-    (make-report 51 [1 77] [25 75])
-    (catch Exception e (.getMessage e)))
+    (fetch-data 51 [1 77] [25 75])
+    (catch Exception e (.getMessage e))
+    )
   (try
-    (make-report 16 [1] [10 20 30])
-    (catch Exception e (.getMessage e)))
+    (fetch-data 16 [1] [10 20 30])
+    (catch Exception e (.getMessage e))
+    )
   :rcf)
 
+(defn make-report
+  [data]
+  data)
+
 (defn send-report
-  [line_id bot_name message]
-  (log/info "send-report" line_id bot_name message)
-  )
+  [{:keys [name bot_name]} report]
+  (let [url (str lp "/api/push")]
+    (println url name bot_name report)
+    (curl/post url
+               {:form-params {:name name
+                              :bot bot_name
+                              :text report}
+                :follow-redirects false})))
+
+(comment
+  (send-report {:name "hkimura" :bot_name "SAGA-JUDO"}
+               "follow-redirects false")
+  :rcf)
 
 (defn reports
   [users types days]
   (for [user users]
-    (make-report (:id user) types days)))
+     (send-report user
+                  (make-report (fetch-data (:id user) types days)))))
 
 (comment
   (reports @users [1 77] [25 75])

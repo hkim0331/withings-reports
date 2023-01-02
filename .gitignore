@@ -4,4 +4,5 @@
 /db-dumps/
 /install/
 cookie.txt
+reports.txt
 curl.sh
