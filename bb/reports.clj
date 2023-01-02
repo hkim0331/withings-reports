@@ -103,32 +103,60 @@
   (fetch-meas-before 16 1 75)
   :rcf)
 
+;; babashka does not catch
+;; java.lang.ArithmeticException: Divide by zero reports
 (defn average
   [xs]
   (/ (reduce + xs) (count xs)))
 
 (comment
-  (average (range 10))
+  (try
+    (average [])
+    (catch Exception e (.getMessage e)))
   :rcf)
 
 (defn make-report
-  "Fetch user `id` data, line-push with comments."
+  "Fetch user `id` data, line-push with comments.
+   returns [[day1 ave1] [day2 ave2] [day3 ave3]]
+   if data lacks, returns [[d \"none\"] ...]"
   [{:keys [id bot_name line_id]} type days]
+  (println id bot_name line_id)
   (for [d days]
-    [d (average
-        (map :meas/measure (fetch-meas-before id type d)))]))
+    (let [xs (fetch-meas-before id type d)]
+     (if (empty? xs)
+       [d "none"]
+       [d (average (map :meas/measure xs))]))))
 
 (defn find-user [n]
   (first (filter #(= n (:id %)) @users)))
 
 (comment
-  (find-user 51)
-  (-> (find-user 51)
-      (make-report 1 [75]))
-  ;; FIXME: java.lang.ArithmeticException: Divide by zero
-  (-> (find-user 16)
-      (make-report 1 [10]))
-  :rcf)
+  (try
+    (make-report (find-user 51) 1 [75 70 90])
+    (catch Exception e (.getMessage e)))
+ ;; FIXME: why does not catch?
+  (try
+    (make-report (find-user 16) 1 [10 20 30])
+    (catch Exception e (.getMessage e)))
+
+  (try
+    (/ 1 0)
+    (catch Exception e (.getMessage e)))
+
+  (defn divzero [x y]
+    (/ x y))
+
+  (divzero 1 0)
+
+  (defn g []
+    (divzero 1 0))
+
+  (defn f []
+    (try
+      (divzero 1 0)
+      (catch Exception e (.getMessage e))))
+  (f)
+  )
 
 (defn make-reports
   [types days]
@@ -139,8 +167,3 @@
          (make-report user type days)
          (catch Exception e
            (log/debug (.getMessage e))))))))
-
-
-(comment
-  (make-reports [1] [1 20])
-  :rcf)
