@@ -115,55 +115,38 @@
     (catch Exception e (.getMessage e)))
   :rcf)
 
+(defn find-user [n]
+  (first (filter #(= n (:id %)) @users)))
+
 (defn make-report
   "Fetch user `id` data, line-push with comments.
    returns [[day1 ave1] [day2 ave2] [day3 ave3]]
    if data lacks, returns [[d \"none\"] ...]"
-  [{:keys [id bot_name line_id]} type days]
-  (println id bot_name line_id)
-  (for [d days]
-    (let [xs (fetch-meas-before id type d)]
-     (if (empty? xs)
-       [d "none"]
-       [d (average (map :meas/measure xs))]))))
-
-(defn find-user [n]
-  (first (filter #(= n (:id %)) @users)))
+  [id type days]
+  (cons type
+        (for [d days]
+          (let [xs (fetch-meas-before id type d)]
+            (if (empty? xs)
+              [d "none"]
+              [d (average (map :meas/measure xs))])))))
 
 (comment
   (try
-    (make-report (find-user 51) 1 [75 70 90])
-    (catch Exception e (.getMessage e)))
- ;; FIXME: why does not catch?
+    (make-report 51 1 [75 70 90])
+    (catch Exception e (.getMessage e))
+    )
   (try
-    (make-report (find-user 16) 1 [10 20 30])
-    (catch Exception e (.getMessage e)))
+    (make-report 16 1 [10 20 30])
+    (catch Exception e (.getMessage e))
+    )
+  :rcf)
 
-  (try
-    (/ 1 0)
-    (catch Exception e (.getMessage e)))
-
-  (defn divzero [x y]
-    (/ x y))
-
-  (divzero 1 0)
-
-  (defn g []
-    (divzero 1 0))
-
-  (defn f []
-    (try
-      (divzero 1 0)
-      (catch Exception e (.getMessage e))))
-  (f)
-  )
-
-(defn make-reports
-  [types days]
-  (doseq [user @users]
-    (log/debug
+(defn reports
+  [users types days]
+  (for [user users]
      (for [type types]
-       (try
-         (make-report user type days)
-         (catch Exception e
-           (log/debug (.getMessage e))))))))
+       (make-report (:id user) type days))))
+
+(comment
+  (reports @users [1] [10 20 30])
+  :rcf)
