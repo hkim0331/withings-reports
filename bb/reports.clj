@@ -118,35 +118,39 @@
 (defn find-user [n]
   (first (filter #(= n (:id %)) @users)))
 
+;; changed type -> types
 (defn make-report
   "Fetch user `id` data, line-push with comments.
    returns [[day1 ave1] [day2 ave2] [day3 ave3]]
    if data lacks, returns [[d \"none\"] ...]"
-  [id type days]
-  (cons type
-        (for [d days]
-          (let [xs (fetch-meas-before id type d)]
-            (if (empty? xs)
-              [d "none"]
-              [d (average (map :meas/measure xs))])))))
+  [id types days]
+  (for [type types]
+    (cons type
+          (for [d days]
+            (let [xs (fetch-meas-before id type d)]
+              (if (empty? xs)
+                [d "none"]
+                [d (average (map :meas/measure xs))]))))))
 
 (comment
   (try
-    (make-report 51 1 [75 70 90])
-    (catch Exception e (.getMessage e))
-    )
+    (make-report 51 [1 77] [25 75])
+    (catch Exception e (.getMessage e)))
   (try
-    (make-report 16 1 [10 20 30])
-    (catch Exception e (.getMessage e))
-    )
+    (make-report 16 [1] [10 20 30])
+    (catch Exception e (.getMessage e)))
   :rcf)
+
+(defn send-report
+  [line_id bot_name message]
+  (log/info "send-report" line_id bot_name message)
+  )
 
 (defn reports
   [users types days]
   (for [user users]
-     (for [type types]
-       (make-report (:id user) type days))))
+    (make-report (:id user) types days)))
 
 (comment
-  (reports @users [1] [10 20 30])
+  (reports @users [1 77] [25 75])
   :rcf)
