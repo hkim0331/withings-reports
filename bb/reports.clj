@@ -16,11 +16,12 @@
          :user     (System/getenv "MYSQL_USER")
          :password (System/getenv "MYSQL_PASSWORD")})
 
-(def wc "https://wc.kohhoh.jp")
-(def cookie "cookie.txt")
+(def wc (or (System/getenv "WC") "https://wc.kohhoh.jp"))
 
 (def admin    (System/getenv "WC_LOGIN"))
 (def password (System/getenv "WC_PASSWORD"))
+
+(def cookie "cookie.txt")
 
 (def users (atom nil))
 
@@ -64,11 +65,13 @@
       (filter :valid ret)
       ret)))
 
-(comment
-  users
-  :rcf)
-
 (reset! users (fetch-users true))
+
+(comment
+  @users
+  (first @users)
+  (second @users)
+  :rcf)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; fetch meas
@@ -83,7 +86,7 @@
     id type since]))
 
 (defn fetch-meas-before
-  "returns `id` measure `type` between today and `days` before."
+  "Returns `id` measure `type` util today from `days` before."
   [id type days]
   (mysql/execute!
    db
@@ -98,4 +101,52 @@
   (fetch-meas 51 1 "2022-12-10")
   (fetch-meas 16 1 "2022-11-20")
   (fetch-meas-before 16 1 75)
+  :rcf)
+
+;; babashka does not catch
+;; java.lang.ArithmeticException: Divide by zero reports
+(defn average
+  [xs]
+  (/ (reduce + xs) (count xs)))
+
+(comment
+  (try
+    (average [])
+    (catch Exception e (.getMessage e)))
+  :rcf)
+
+(defn find-user [n]
+  (first (filter #(= n (:id %)) @users)))
+
+(defn make-report
+  "Fetch user `id` data, line-push with comments.
+   returns [[day1 ave1] [day2 ave2] [day3 ave3]]
+   if data lacks, returns [[d \"none\"] ...]"
+  [id type days]
+  (cons type
+        (for [d days]
+          (let [xs (fetch-meas-before id type d)]
+            (if (empty? xs)
+              [d "none"]
+              [d (average (map :meas/measure xs))])))))
+
+(comment
+  (try
+    (make-report 51 1 [75 70 90])
+    (catch Exception e (.getMessage e))
+    )
+  (try
+    (make-report 16 1 [10 20 30])
+    (catch Exception e (.getMessage e))
+    )
+  :rcf)
+
+(defn reports
+  [users types days]
+  (for [user users]
+     (for [type types]
+       (make-report (:id user) type days))))
+
+(comment
+  (reports @users [1] [10 20 30])
   :rcf)
