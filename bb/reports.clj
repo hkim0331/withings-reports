@@ -161,11 +161,16 @@
 
 ;; FIXME
 (defn make-report
-  [data]
-  (str data))
+  [report]
+  (let [id (first report)
+        data (rest report)]
+    (println "id" id)
+    (for [[d v] data]
+      (println d v))))
 
 (comment
-  (make-report (fetch-data 16 [1 5 77] [1 25 75]))
+  (fetch-data 51 [1 76 77] [1 25 75])
+  (make-report (fetch-data 51 [1 76 77] [1 25 75]))
   (send-report {:name "hkimura" :bot_name "SAGA-JUDO"}
                (make-report (fetch-data 16 [1 5 77] [1 25 75])))
   :rcf)
