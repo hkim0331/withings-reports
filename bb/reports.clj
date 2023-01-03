@@ -142,7 +142,9 @@
       int
       (/ 100.0)))
 
-(f-to-f 3.14159265)
+(comment
+  (f-to-f 3.14159265)
+  :rcf)
 
 ;; changed type -> types
 (defn fetch-data
