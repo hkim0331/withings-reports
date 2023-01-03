@@ -25,6 +25,7 @@
 (def cookie "reports.txt")
 
 (def users (atom nil))
+(def measures (atom nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; utils
@@ -40,12 +41,18 @@
       :out
       str/trim-newline))
 
+(defn now []
+  (-> (sh "date" "+%F %T")
+      :out
+      str/trim-newline))
+
 (comment
   (today)
+  (now)
   :rcf)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; login, users
+;; login, users, measures
 (defn login
   "login. if success, updates cookie and returns 302."
   []
@@ -53,6 +60,7 @@
         params (str "login=" admin "&password=" password)]
     (curl/post api {:raw-args ["-c" cookie "-d" params]
                     :follow-redirects false})))
+
 (defn fetch-users
   "fetch users via withing-client,
    return the users data in json format.
@@ -69,10 +77,31 @@
 
 (reset! users (fetch-users true))
 
+(defn fetch-measures
+  "fetch measures via withing-client,
+   return the measures data in json format."
+  []
+  (let [_ (login)]
+    (-> (curl-get (str wc "/api/measures"))
+        :body
+        (json/parse-string true)
+        vec)))
+
+(reset! measures (fetch-measures))
+
+(defn kind
+  "{:id 1, :value 1, :description \"Weight (kg)\", :j_desc \"体重 (kg)\"}
+   if nil j-desc, returns description."
+  [type]
+  (let [item (first (filter #(= type (:value %)) @measures))]
+    (or (:j_desc item) (:description item))))
+
 (comment
   @users
   (first @users)
   (second @users)
+  (kind 1)
+  (kind 77)
   :rcf)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -100,8 +129,6 @@
     id type days]))
 
 (comment
-  ;; (fetch-meas 51 1 "2022-12-10")
-  ;; (fetch-meas 16 1 "2022-11-20")
   (fetch-meas-before 16 1 75)
   :rcf)
 
@@ -115,72 +142,96 @@
       int
       (/ 100.0)))
 
-(f-to-f 3.14159265)
-
-;; (defn find-user [n]
-;;   (first (filter #(= n (:id %)) @users)))
+(comment
+  (f-to-f 3.14159265)
+  :rcf)
 
 ;; changed type -> types
 (defn fetch-data
   "Fetch user `id` data.
    (fetch-data 51 [1 77] [25 75])
-   if data lacks, returns [[d \"none\"] ...]
+   if data lacks, returns [[d \"--\"] ...]
    json?"
-  [id types days]
+  [{:keys [id]} types days]
   (cons id
         (for [type types]
          (cons type
                 (for [day days]
                   (let [xs (fetch-meas-before id type day)]
                     (if (empty? xs)
-                      [day "none"]
+                      [day "--"]
                       [day (-> (map :meas/measure xs)
                                average
                                f-to-f)])))))))
 
-(comment
-  (try
-    (fetch-data 51 [1 77] [25 75])
-    (catch Exception e (.getMessage e))
-    )
-  (try
-    (fetch-data 16 [1] [10 20 30])
-    (catch Exception e (.getMessage e))
-    )
-  :rcf)
+
+(defn format-one
+  [[type & rows]]
+  (println rows)
+  (str (kind type)
+       "\n"
+       (apply str (interpose " " (mapv second rows)))
+       "\n"))
+
+(defn format-report
+  "Returns string"
+  [[_ & reports]]
+  (str (now)
+       "\n"
+       (str/join (mapv format-one reports))))
 
 (defn send-report
-  [{:keys [name bot_name]} report]
+  "send-report takes three arguments.
+   1, user(map)
+   2, report(string)
+   3. help message(string)"
+  [{:keys [name bot_name]} report help]
   (let [url (str lp "/api/push")]
-    (log/info url name bot_name report)
-    (curl/post url
-               {:form-params {:name name
-                              :bot bot_name
-                              :text report}
-                :follow-redirects false})))
+    (println url name bot_name)
+    (println (str report "\n" help))
+    #_(curl/post url
+                 {:form-params {:name name
+                                :bot bot_name
+                                :text report}
+                  :follow-redirects false})))
 
-;; FIXME
-(defn make-report
-  [report]
-  (let [id (first report)
-        data (rest report)]
-    (println "id" id)
-    (for [[d v] data]
-      (println d v))))
+(def hkimura (-> (filter #(= "hkimura" (:name %)) @users)
+                 first))
+
+(def saga-user (-> (filter #(= 51 (:id %)) @users)
+                   first))
+
+(defn help
+  [days]
+  (str "項目の下の3つの数字はそれぞれ"
+       (first days) "日前データ、"
+       (second days) "日間平均、"
+       (nth days 2) "日間平均を表しています。\n"
+       "-- は欠測。"))
 
 (comment
-  (fetch-data 51 [1 76 77] [1 25 75])
-  (make-report (fetch-data 51 [1 76 77] [1 25 75]))
-  (send-report {:name "hkimura" :bot_name "SAGA-JUDO"}
-               (make-report (fetch-data 16 [1 5 77] [1 25 75])))
+  (fetch-data hkimura [1 76 77] [1 25 75])
+  (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
+  (format-report (fetch-data saga-user [1 76 77] [1 25 75]))
+  (send-report hkimura
+               (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
+               (help [1 25 75]))
+  (send-report saga-user
+               (format-report (fetch-data saga-user [1 76 77] [1 25 75]))
+               (help [1 25 75]))
   :rcf)
 
 (defn reports
   [users types days]
-  (for [user users]
-    (send-report user (make-report (fetch-data (:id user) types days)))))
+  (let [message (help days)]
+    (doseq [user users]
+      (send-report user
+                   (format-report (fetch-data user types days))
+                   message))))
+(comment
+  (reports @users [1 76 77] [1 25 75])
+  :rcf)
 
-;; まだ早い。
-;; (comment
-;;   (reports @users [1 77] [25 75])
-;;   :rcf)
+(defn -main
+  [& args]
+  (reports @users [1 76 77] [1 25 75]))
