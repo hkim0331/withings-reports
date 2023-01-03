@@ -52,7 +52,7 @@
   :rcf)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; login, users
+;; login, users, measures
 (defn login
   "login. if success, updates cookie and returns 302."
   []
@@ -129,8 +129,6 @@
     id type days]))
 
 (comment
-  ;; (fetch-meas 51 1 "2022-12-10")
-  ;; (fetch-meas 16 1 "2022-11-20")
   (fetch-meas-before 16 1 75)
   :rcf)
 
@@ -165,8 +163,13 @@
                                f-to-f)])))))))
 
 ;; use interleave?
+;; FIXME: こんな感じか？
+;; 80(1日) 81(25日) 82(75日)
+;; help-url を作ってそちらに詳細を書く。
+;; (help-message dates) をメッセージの下部にくっつける。
 (defn format-one
   [[type & rows]]
+  (println rows)
   (str (kind type)
        "\n"
        (apply str (interpose " " (mapv second rows)))
@@ -180,9 +183,10 @@
        (str/join (mapv format-one reports))))
 
 (defn send-report
-  [{:keys [name bot_name]} report]
+  [{:keys [name bot_name]} report help]
   (let [url (str lp "/api/push")]
-    (println url name bot_name report)
+    (println url name bot_name)
+    (println (str report "\n" help))
     #_(curl/post url
                  {:form-params {:name name
                                 :bot bot_name
@@ -195,21 +199,39 @@
 (def saga-user (-> (filter #(= 51 (:id %)) @users)
                    first))
 
+(defn help
+  [days]
+  (str "項目の下の3つの数字はそれぞれ"
+       (first days) "日前データ、"
+       (second days) "日間平均、"
+       (nth days 2) "日間平均を表しています。\n"
+       "-- は欠測値。"))
+
 (comment
   (fetch-data hkimura [1 76 77] [1 25 75])
   (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
   (format-report (fetch-data saga-user [1 76 77] [1 25 75]))
   (send-report hkimura
-               (format-report (fetch-data hkimura [1 76 77] [1 25 75])))
+               (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
+               (help [1 25 75]))
   (send-report saga-user
-               (format-report (fetch-data saga-user [1 76 77] [1 25 75])))
+               (format-report (fetch-data saga-user [1 76 77] [1 25 75]))
+               (help [1 25 75]))
   :rcf)
+
+
+
+(comment
+  (help [1 2 3])
+  )
 
 (defn reports
   [users types days]
-  (for [user users]
-    (send-report user (format-report (fetch-data user types days)))))
-
+  (let [help-message (help days)]
+    (doseq [user users]
+      (send-report user
+                   (format-report (fetch-data user types days))
+                   help-message))))
 (comment
-   (reports @users [1 77] [25 75])
-   :rcf)
+  (reports @users [1 76 77] [1 25 75])
+  :rcf)
