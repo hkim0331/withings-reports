@@ -77,15 +77,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; fetch meas
-(defn fetch-meas
-  "returns [{:meas/measure 81.2 :meas/created #inst \"2022-12-11..\"} ...]"
-  [id type since]
-  (log/info "fetch-meas" id type since)
-  (mysql/execute!
-   db
-   ["select measure from meas
-     where user_id=? and type=? and created >?"
-    id type since]))
+;; (defn fetch-meas
+;;   "returns [{:meas/measure 81.2 :meas/created #inst \"2022-12-11..\"} ...]"
+;;   [id type since]
+;;   (log/info "fetch-meas" id type since)
+;;   (mysql/execute!
+;;    db
+;;    ["select measure from meas
+;;      where user_id=? and type=? and created >?"
+;;     id type since]))
 
 (defn fetch-meas-before
   "Returns `id` measure `type` util today from `days` before."
@@ -100,8 +100,8 @@
     id type days]))
 
 (comment
-  (fetch-meas 51 1 "2022-12-10")
-  (fetch-meas 16 1 "2022-11-20")
+  ;; (fetch-meas 51 1 "2022-12-10")
+  ;; (fetch-meas 16 1 "2022-11-20")
   (fetch-meas-before 16 1 75)
   :rcf)
 
@@ -130,13 +130,13 @@
   (cons id
         (for [type types]
          (cons type
-                (for [d days]
-                  (let [xs (fetch-meas-before id type d)]
+                (for [day days]
+                  (let [xs (fetch-meas-before id type day)]
                     (if (empty? xs)
-                      [d "none"]
-                      [d (-> (map :meas/measure xs)
-                             average
-                             f-to-f)])))))))
+                      [day "none"]
+                      [day (-> (map :meas/measure xs)
+                               average
+                               f-to-f)])))))))
 
 (comment
   (try
@@ -149,31 +149,33 @@
     )
   :rcf)
 
-(defn make-report
-  [data]
-  data)
-
 (defn send-report
   [{:keys [name bot_name]} report]
   (let [url (str lp "/api/push")]
-    (println url name bot_name report)
+    (log/info url name bot_name report)
     (curl/post url
                {:form-params {:name name
                               :bot bot_name
                               :text report}
                 :follow-redirects false})))
 
+;; FIXME
+(defn make-report
+  [data]
+  (str data))
+
 (comment
+  (make-report (fetch-data 16 [1 5 77] [1 25 75]))
   (send-report {:name "hkimura" :bot_name "SAGA-JUDO"}
-               "follow-redirects false")
+               (make-report (fetch-data 16 [1 5 77] [1 25 75])))
   :rcf)
 
 (defn reports
   [users types days]
   (for [user users]
-     (send-report user
-                  (make-report (fetch-data (:id user) types days)))))
+    (send-report user (make-report (fetch-data (:id user) types days)))))
 
-(comment
-  (reports @users [1 77] [25 75])
-  :rcf)
+;; まだ早い。
+;; (comment
+;;   (reports @users [1 77] [25 75])
+;;   :rcf)
