@@ -215,23 +215,18 @@
                (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
                (help [1 25 75]))
   (send-report saga-user
+               (help [1 25 75])
                (format-report (fetch-data saga-user [1 76 77] [1 25 75]))
-               (help [1 25 75]))
+               )
   :rcf)
-
-
-
-(comment
-  (help [1 2 3])
-  )
 
 (defn reports
   [users types days]
-  (let [help-message (help days)]
+  (let [message (help days)]
     (doseq [user users]
       (send-report user
                    (format-report (fetch-data user types days))
-                   help-message))))
+                   message))))
 (comment
   (reports @users [1 76 77] [1 25 75])
   :rcf)
