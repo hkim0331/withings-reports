@@ -205,7 +205,7 @@
        (first days) "日前データ、"
        (second days) "日間平均、"
        (nth days 2) "日間平均を表しています。\n"
-       "-- は欠測値。"))
+       "-- は欠測。"))
 
 (comment
   (fetch-data hkimura [1 76 77] [1 25 75])
