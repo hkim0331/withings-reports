@@ -59,6 +59,7 @@
         params (str "login=" admin "&password=" password)]
     (curl/post api {:raw-args ["-c" cookie "-d" params]
                     :follow-redirects false})))
+
 (defn fetch-users
   "fetch users via withing-client,
    return the users data in json format.
@@ -130,7 +131,7 @@
 (defn fetch-data
   "Fetch user `id` data.
    (fetch-data 51 [1 77] [25 75])
-   if data lacks, returns [[d \"none\"] ...]
+   if data lacks, returns [[d \"-\"] ...]
    json?"
   [id types days]
   (cons id
@@ -139,7 +140,7 @@
                 (for [day days]
                   (let [xs (fetch-meas-before id type day)]
                     (if (empty? xs)
-                      [day "none"]
+                      [day "-"]
                       [day (-> (map :meas/measure xs)
                                average
                                f-to-f)])))))))
@@ -166,29 +167,36 @@
                 :follow-redirects false})))
 
 ;; FIXME
+;; 1->体重
+;; 77->
+;; 78->
+;; その他。
 (defn kind
-  [k]
-  (identity k))
+  "FIXME: 1->体重 77->... 78->... の書き換えをする。"
+  [one]
+  (first one))
+
+(defn values
+  "- はどうする？"
+  [day-value]
+  (mapv second day-value))
 
 (defn desc
-  [[k & data]]
-  (str (kind k) (mapv second data)))
+  [one]
+  (str (kind one) (values (rest one))))
 
 (defn make-report
   [[id & data]]
   (println "id" id)
   (println "data" data)
-  (str (now) "\n"
-       (mapv desc data)))
-
-  ;; (let [id (first report)
-  ;;       data (rest report)]
+  (println (now))
+  (mapv desc data))
 
 (comment
   ;; (fetch-data 51 [1 76 77] [1 25 75])
   (make-report (fetch-data 51 [1 76 77] [1 25 75]))
   (send-report {:name "hkimura" :bot_name "SAGA-JUDO"}
-               (make-report (fetch-data 16 [1 5 77] [1 25 75])))
+               (make-report (fetch-data 51 [1 76 77] [1 25 75])))
   :rcf)
 
 ;;
