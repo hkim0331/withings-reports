@@ -40,8 +40,14 @@
       :out
       str/trim-newline))
 
+(defn now []
+  (-> (sh "date" "+%F %T")
+      :out
+      str/trim-newline))
+
 (comment
   (today)
+  (now)
   :rcf)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -160,21 +166,32 @@
                 :follow-redirects false})))
 
 ;; FIXME
+(defn kind
+  [k]
+  (identity k))
+
+(defn desc
+  [[k & data]]
+  (str (kind k) (mapv second data)))
+
 (defn make-report
-  [report]
-  (let [id (first report)
-        data (rest report)]
-    (println "id" id)
-    (for [[d v] data]
-      (println d v))))
+  [[id & data]]
+  (println "id" id)
+  (println "data" data)
+  (str (now) "\n"
+       (mapv desc data)))
+
+  ;; (let [id (first report)
+  ;;       data (rest report)]
 
 (comment
-  (fetch-data 51 [1 76 77] [1 25 75])
+  ;; (fetch-data 51 [1 76 77] [1 25 75])
   (make-report (fetch-data 51 [1 76 77] [1 25 75]))
   (send-report {:name "hkimura" :bot_name "SAGA-JUDO"}
                (make-report (fetch-data 16 [1 5 77] [1 25 75])))
   :rcf)
 
+;;
 (defn reports
   [users types days]
   (for [user users]
