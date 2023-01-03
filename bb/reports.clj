@@ -162,11 +162,7 @@
                                average
                                f-to-f)])))))))
 
-;; use interleave?
-;; FIXME: こんな感じか？
-;; 80(1日) 81(25日) 82(75日)
-;; help-url を作ってそちらに詳細を書く。
-;; (help-message dates) をメッセージの下部にくっつける。
+
 (defn format-one
   [[type & rows]]
   (println rows)
@@ -183,6 +179,10 @@
        (str/join (mapv format-one reports))))
 
 (defn send-report
+  "send-report takes three arguments.
+   1, user(map)
+   2, report(string)
+   3. help message(string)"
   [{:keys [name bot_name]} report help]
   (let [url (str lp "/api/push")]
     (println url name bot_name)
@@ -215,9 +215,8 @@
                (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
                (help [1 25 75]))
   (send-report saga-user
-               (help [1 25 75])
                (format-report (fetch-data saga-user [1 76 77] [1 25 75]))
-               )
+               (help [1 25 75]))
   :rcf)
 
 (defn reports
@@ -230,3 +229,7 @@
 (comment
   (reports @users [1 76 77] [1 25 75])
   :rcf)
+
+(defn -main
+  [& args]
+  (reports @users [1 76 77] [1 25 75]))
