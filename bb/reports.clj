@@ -25,6 +25,7 @@
 (def cookie "reports.txt")
 
 (def users (atom nil))
+(def measures (atom nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; utils
@@ -76,10 +77,31 @@
 
 (reset! users (fetch-users true))
 
+(defn fetch-measures
+  "fetch measures via withing-client,
+   return the measures data in json format."
+  []
+  (let [_ (login)]
+    (-> (curl-get (str wc "/api/measures"))
+        :body
+        (json/parse-string true)
+        vec)))
+
+(reset! measures (fetch-measures))
+
+(defn kind
+  "{:id 1, :value 1, :description \"Weight (kg)\", :j_desc \"体重 (kg)\"}
+   if nil j-desc, returns description."
+  [type]
+  (let [item (first (filter #(= type (:value %)) @measures))]
+    (or (:j_desc item) (:description item))))
+
 (comment
   @users
   (first @users)
   (second @users)
+  (kind 1)
+  (kind 77)
   :rcf)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -124,9 +146,6 @@
 
 (f-to-f 3.14159265)
 
-;; (defn find-user [n]
-;;   (first (filter #(= n (:id %)) @users)))
-
 ;; changed type -> types
 (defn fetch-data
   "Fetch user `id` data.
@@ -144,16 +163,6 @@
                       [day (-> (map :meas/measure xs)
                                average
                                f-to-f)])))))))
-
-;; FIXME
-;; 1->体重
-;; 77->
-;; 78->
-;; その他。
-(defn kind
-  "FIXME: 1->体重 77->... 78->... の書き換えをする。"
-  [type]
-  type)
 
 ;; use interleave?
 (defn format-one
