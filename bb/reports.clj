@@ -131,40 +131,19 @@
 (defn fetch-data
   "Fetch user `id` data.
    (fetch-data 51 [1 77] [25 75])
-   if data lacks, returns [[d \"-\"] ...]
+   if data lacks, returns [[d \"--\"] ...]
    json?"
-  [id types days]
+  [{:keys [id]} types days]
   (cons id
         (for [type types]
          (cons type
                 (for [day days]
                   (let [xs (fetch-meas-before id type day)]
                     (if (empty? xs)
-                      [day "-"]
+                      [day "--"]
                       [day (-> (map :meas/measure xs)
                                average
                                f-to-f)])))))))
-
-(comment
-  (try
-    (fetch-data 51 [1 77] [25 75])
-    (catch Exception e (.getMessage e))
-    )
-  (try
-    (fetch-data 16 [1] [10 20 30])
-    (catch Exception e (.getMessage e))
-    )
-  :rcf)
-
-(defn send-report
-  [{:keys [name bot_name]} report]
-  (let [url (str lp "/api/push")]
-    (log/info url name bot_name report)
-    (curl/post url
-               {:form-params {:name name
-                              :bot bot_name
-                              :text report}
-                :follow-redirects false})))
 
 ;; FIXME
 ;; 1->体重
@@ -176,11 +155,7 @@
   [type]
   type)
 
-;; (defn format-one
-;;   [[type & rows]]
-;;   {:type (kind type)
-;;    :values (mapv second rows)})
-
+;; use interleave?
 (defn format-one
   [[type & rows]]
   (str (kind type)
@@ -191,23 +166,41 @@
 (defn format-report
   "Returns string"
   [[_ & reports]]
-  (mapv format-one reports))
+  (str (now)
+       "\n"
+       (str/join (mapv format-one reports))))
+
+(defn send-report
+  [{:keys [name bot_name]} report]
+  (let [url (str lp "/api/push")]
+    (println url name bot_name report)
+    #_(curl/post url
+                 {:form-params {:name name
+                                :bot bot_name
+                                :text report}
+                  :follow-redirects false})))
+
+(def hkimura (-> (filter #(= "hkimura" (:name %)) @users)
+                 first))
+
+(def saga-user (-> (filter #(= 51 (:id %)) @users)
+                   first))
 
 (comment
-  (fetch-data 51 [1 76 77] [1 25 75])
-  ;; (51 (1 [1 "-"] [25 80.9] [75 81.28]) (76 [1 "-"] [25 64.47] [75 65.08]) (77 [1 "-"] [25 48.82] [75 49.42]))
-  (format-report (fetch-data 51 [1 76 77] [1 25 75]))
-  (send-report {:name "hkimura" :bot_name "SAGA-JUDO"}
-               (format-report (fetch-data 51 [1 76 77] [1 25 75])))
+  (fetch-data hkimura [1 76 77] [1 25 75])
+  (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
+  (format-report (fetch-data saga-user [1 76 77] [1 25 75]))
+  (send-report hkimura
+               (format-report (fetch-data hkimura [1 76 77] [1 25 75])))
+  (send-report saga-user
+               (format-report (fetch-data saga-user [1 76 77] [1 25 75])))
   :rcf)
 
-;;
 (defn reports
   [users types days]
   (for [user users]
-    (send-report user (make-report (fetch-data (:id user) types days)))))
+    (send-report user (format-report (fetch-data user types days)))))
 
-;; まだ早い。
-;; (comment
-;;   (reports @users [1 77] [25 75])
-;;   :rcf)
+(comment
+   (reports @users [1 77] [25 75])
+   :rcf)
