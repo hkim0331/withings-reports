@@ -173,30 +173,32 @@
 ;; その他。
 (defn kind
   "FIXME: 1->体重 77->... 78->... の書き換えをする。"
-  [one]
-  (first one))
+  [type]
+  type)
 
-(defn values
-  "- はどうする？"
-  [day-value]
-  (mapv second day-value))
+;; (defn format-one
+;;   [[type & rows]]
+;;   {:type (kind type)
+;;    :values (mapv second rows)})
 
-(defn desc
-  [one]
-  (str (kind one) (values (rest one))))
+(defn format-one
+  [[type & rows]]
+  (str (kind type)
+       "\n"
+       (apply str (interpose " " (mapv second rows)))
+       "\n"))
 
-(defn make-report
-  [[id & data]]
-  (println "id" id)
-  (println "data" data)
-  (println (now))
-  (mapv desc data))
+(defn format-report
+  "Returns string"
+  [[_ & reports]]
+  (mapv format-one reports))
 
 (comment
-  ;; (fetch-data 51 [1 76 77] [1 25 75])
-  (make-report (fetch-data 51 [1 76 77] [1 25 75]))
+  (fetch-data 51 [1 76 77] [1 25 75])
+  ;; (51 (1 [1 "-"] [25 80.9] [75 81.28]) (76 [1 "-"] [25 64.47] [75 65.08]) (77 [1 "-"] [25 48.82] [75 49.42]))
+  (format-report (fetch-data 51 [1 76 77] [1 25 75]))
   (send-report {:name "hkimura" :bot_name "SAGA-JUDO"}
-               (make-report (fetch-data 51 [1 76 77] [1 25 75])))
+               (format-report (fetch-data 51 [1 76 77] [1 25 75])))
   :rcf)
 
 ;;
