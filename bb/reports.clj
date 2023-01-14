@@ -269,11 +269,14 @@
         av2 '((1 [25 93.55] [75 93.73]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))
         sd '((1 [25 0.52] [75 0.46]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))]
     (get-types av1)
-    (get-days2 av2)
-    (get-data 76 av1)
+    ;;(get-days2 av2)
+    ;;(get-data 76 av1)
     ;;(get-type (first av1))
     ;;(get-value (first av1))
+    (for [type (vec (get-types av1))]
+      (debug type))
     )
+  
   :rcf)
 
 (defn warn
@@ -281,25 +284,33 @@
   [days2 av1 av2 sd2]
   (debug "warn" days2 av1 av2 sd2)
   )
+
 (defn make-report
   [ave1 ave2 sd2]
+  (debug ave1)
+  (debug ave2)
+  (debug sd2)
   (let [types (get-types ave1)
         days2 (get-days2 ave2)]
-    (for [type types]
-      (let [warns (warn days2
-                        (get-data type ave1) ;;
-                        (get-data type ave2)
-                        (get-data type sd2))
-            data (format-one [type (get-data type ave1)])]
-        (str warns data)))))
+    (debug types)
+    #_(for [type types]
+      (debug type)
+      #_(let [warns (warn days2
+                          (get-data type ave1) ;;
+                          (get-data type ave2)
+                          (get-data type sd2))
+              data (format-one [type (get-data type ave1)])]
+          (debug "\t" type warns data)
+          (str warns data)))))
 
 (comment
+  (debug "hello" "world" 3.14)
   (make-report
    (fetch-average hkimura [1 76 77] [1 7 28])
    (fetch-average hkimura [1 76 77] [25 75])
    (fetch-sd hkimura [1 76 77] [25 75]))
   ;;
-  (send-report hkimura
+  #_(send-report hkimura
                (str
                 (make-report
                  (fetch-average hkimura [1 76 77] [1 7 28])
@@ -323,7 +334,7 @@
   (reports [hkimura] [1 76 77] [1 7 28])
   ;;(reports @admins [1 76 77] [1 7 28])
   :rcf)
-
+@users
 (defn -main
   [& args]
   (reports @users [1 76 77] [1 7 28]))
