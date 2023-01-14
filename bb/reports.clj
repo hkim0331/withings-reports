@@ -134,14 +134,14 @@
   (f-to-f 3.14159265)
   :rcf)
 
-(defn fetch-data
+(defn fetch-average
   "Fetch user `id` data.
    fetch user id 51's type 1 and 77 in days 25 ad 75 days,
-   (fetch-data 51 [1 77] [25 75])
+   (fetch-average 51 [1 77] [25 75])
    if data lacks, returns [[d \"--\"] ...]
    json?"
   [{:keys [id]} types days]
-  (log/debug "fetch-data" id types days)
+  (log/debug "fetch-average" id types days)
   (cons id
         (for [type types]
           (cons type
@@ -154,12 +154,12 @@
                                f-to-f)])))))))
 
 (comment
-  (fetch-data {:id 16} [1] [3 10 75])
+  (fetch-average {:id 16} [1 77 78] [1 7 28]) 
   :rcf)
 
 (defn format-one
   [[type & rows]]
-  (log/debug rows)
+  (log/debug "format-one" rows)
   (str (kind type)
        "\n"
        (apply str (interpose " " (mapv second rows)))
@@ -200,11 +200,11 @@
        "先頭に🟡🔴がある場合は、25日平均、75日平均からの逸脱を表します。"))
 
 (comment
-  (fetch-data hkimura [1 76 77] [1 7 28])
-  (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
+  (fetch-average hkimura [1 76 77] [1 7 28])
+  (format-report (fetch-average hkimura [1 76 77] [1 25 75]))
   (send-report hkimura
                (str
-                (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
+                (format-report (fetch-average hkimura [1 76 77] [1 25 75]))
                 "\n"
                 (help [1 25 75])))
   :rcf)
@@ -216,7 +216,7 @@
     (doseq [user users]
       (send-report user
                    (str
-                    (format-report (fetch-data user types days))
+                    (format-report (fetch-average user types days))
                     "\n"
                     message)))))
 

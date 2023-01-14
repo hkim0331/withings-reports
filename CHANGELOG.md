@@ -28,6 +28,10 @@
 
 
 ## 0.3.1 - 2023-01-14
+### Changed
+- fetch-data => fetch-average
+### Added
+- fetch-sd
 
 ## 0.3.0 - 2023-01-14
 ### Changed
