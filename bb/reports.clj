@@ -4,6 +4,7 @@
    [babashka.pods :as pods]
    [cheshire.core :as json]
    [clojure.java.shell :refer [sh]]
+   [clojure.math :refer [sqrt]]
    [clojure.string :as str]
    [clojure.tools.logging :as log]))
 
@@ -76,6 +77,13 @@
 
 (reset! users (fetch-users true))
 
+(def hkimura (-> (filter #(= "hkimura" (:name %)) @users)
+                 first))
+
+;; must use with caution
+;; (def saga-user (-> (filter #(= 51 (:id %)) @users)
+;;                    first))
+
 (defn fetch-measures
   "fetch measures via withing-client,
    return the measures data in json format."
@@ -106,7 +114,7 @@
 (defn fetch-meas
   "Returns `id` measure `type` util today from `days` before."
   [{:keys [id type days]}]
-  (log/debug "fetch-meas" id type days)
+  ;; (println "fetch-meas" id type days)
   (mysql/execute!
    db
    ["select measure, created from meas
@@ -135,13 +143,12 @@
   :rcf)
 
 (defn fetch-average
-  "Fetch user `id` data.
-   fetch user id 51's type 1 and 77 in days 25 ad 75 days,
-   (fetch-average 51 [1 77] [25 75])
-   if data lacks, returns [[d \"--\"] ...]
-   json?"
+  "Fetch user id's averaged data.
+   when want user id 51's type 1 and 77 in 1, 7 and 28 days averaged value,
+   (fetch-average 51 [1 77] [1 7 28])
+   if data lacks, returns [[d \"--\"] ...]"
   [{:keys [id]} types days]
-  (log/debug "fetch-average" id types days)
+  (println "fetch-average" id types days)
   (cons id
         (for [type types]
           (cons type
@@ -153,17 +160,101 @@
                                average
                                f-to-f)])))))))
 
+(defn sq [x] (* x x))
+
+(defn sd
+  "return Standard Deviation. denominator = n-1."
+  [xs]
+  (let [x-bar (average xs)
+        n (- (count xs) 1)]
+    (sqrt (/ (reduce + (map #(sq (- x-bar %)) xs)) n))))
+
 (comment
-  (fetch-average {:id 16} [1 77 78] [1 7 28]) 
+  (sd (range 10))
+  :rcf)
+
+(defn fetch-sd
+  "Fetch user-id's sd values.
+   when want user id 51's type 1 and 77 in 25 and 75 days SD value,
+   (fetch-average 51 [1 77] [25 75])
+   if data lacks, returns [[d \"--\"] ...]"
+  [{:keys [id]} types days]
+  (println "fetch-sd" id types days)
+  (cons id
+        (for [type types]
+          (cons type
+                (for [day days]
+                  (let [xs (fetch-meas {:id id :type type :days day})]
+                    (if (empty? xs)
+                      [day "--"]
+                      [day (-> (map :meas/measure xs)
+                               sd
+                               f-to-f)])))))))
+
+(comment
+  [(fetch-average {:id 16} [1 77 78] [1 7 28])
+   (fetch-average {:id 16} [1 77 78] [25 75])
+   (fetch-sd {:id 16} [1 77 78] [25 75])]
   :rcf)
 
 (defn format-one
   [[type & rows]]
-  (log/debug "format-one" rows)
+  (println "format-one" (kind type) rows)
   (str (kind type)
        "\n"
        (apply str (interpose " " (mapv second rows)))
        "\n"))
+
+(defn get-type [a]
+  (first a))
+
+(defn get-value [a]
+  (-> a second second))
+
+(defn get-mean [av2 type days]
+  (->> av2
+       (filter #(= type (first %)))
+       (filter #(= days (first %)))
+       second))
+
+(defn get-sd [sd type days]
+  (get-mean sd type days))
+
+(comment
+  (let [av1 '((1 [1 --] [7 93.2] [28 93.55]) (76 [1 --] [7 --] [28 --]) (77 [1 --] [7 --] [28 --]))
+        av2 '((1 [25 93.55] [75 93.73]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))
+        sd '((1 [25 0.52] [75 0.46]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))
+        ]
+    (get-type (first av1))
+    (get-value (first av1))
+    )
+  :rcf)
+
+(defn report-2
+  "format-report を差し替える。
+   av2, sd を使って、av1 にマークをつけるかつけないかを決める。"
+  [[_ & av1] [_ & av2] [_ & sds]]
+  (println "report-2" av1)
+  (println "report-2" av2)
+  (println "report-2" sds)
+  (for [a av1]
+    (let [type  (get-type a)
+          val   (get-value a)
+          mean  (get-mean av2 type 25)
+          sd    (get-sd sds type 25)
+          warn  (abs (- val mean))]
+      (cond
+        (< (* 2 sd) warn) (cons "🔴" a)
+        (< sd warn) (cons "🟡" a)
+        :else a))))
+
+
+(comment
+  (report-2
+   (fetch-average hkimura [1 76 77] [1 7 28])
+   (fetch-average hkimura [1 76 77] [25 75])
+   (fetch-sd hkimura [1 76 77] [25 75]))
+  :rcf)
 
 (defn format-report
   "Returns string"
@@ -172,23 +263,19 @@
        "\n"
        (str/join (mapv format-one reports))))
 
+
 (defn send-report
   "send-report takes two arguments."
   [{:keys [name bot_name]} text]
   (let [url (str lp "/api/push")]
-    (log/debug url name bot_name)
+    (println url name bot_name)
     (curl/post url
                {:form-params {:name name
                               :bot bot_name
                               :text text}
                 :follow-redirects false})))
 
-(def hkimura (-> (filter #(= "hkimura" (:name %)) @users)
-                 first))
 
-;; must use with caution
-;; (def saga-user (-> (filter #(= 51 (:id %)) @users)
-;;                    first))
 
 (defn help
   [days]
@@ -201,12 +288,14 @@
 
 (comment
   (fetch-average hkimura [1 76 77] [1 7 28])
-  (format-report (fetch-average hkimura [1 76 77] [1 25 75]))
   (send-report hkimura
                (str
-                (format-report (fetch-average hkimura [1 76 77] [1 25 75]))
+                (report-2
+                 (fetch-average hkimura [1 76 77] [1 7 28])
+                 (fetch-average hkimura [1 76 77] [25 75])
+                 (fetch-sd hkimura [1 76 77] [25 75]))
                 "\n"
-                (help [1 25 75])))
+                (help [1 7 28])))
   :rcf)
 
 (defn reports
@@ -223,13 +312,10 @@
 (def admins (atom nil))
 (reset! admins [(filter #(= 16 (:id %)) @users)
                 (filter #(= 26 (:id %)) @users)])
-@admins
-(def me (atom (filter #(= 16 (:id %)) @users)))
 
 (comment
-  (reports @me [1 76 77] [1 7 28])
-  (reports @admins [1 76 77] [1 25 75])
-  ; clojure.lang.ExceptionInfo: babashka.curl: status 500 reports /Users/hkim/clojure/withings-reports/bb/reports.clj:11:5
+  (reports [@hkimura] [1 76 77] [1 7 28])
+  (reports @admins [1 76 77] [1 7 28])
   :rcf)
 
 (defn -main
