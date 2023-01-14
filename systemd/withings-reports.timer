@@ -1,0 +1,9 @@
+[Unit]
+Description=Reports via LINE to Saga athletes
+
+[Timer]
+OnCalendar=*-*-* 09:00
+Unit=withings-reports.service
+
+[Install]
+WantedBy=timers.target

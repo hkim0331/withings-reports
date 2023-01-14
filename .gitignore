@@ -3,5 +3,7 @@
 /.lsp/.cache
 /db-dumps/
 /install/
+/log/
 cookie.txt
+reports.txt
 curl.sh
