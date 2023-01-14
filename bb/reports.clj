@@ -18,7 +18,6 @@
 
 (def wc (System/getenv "WC"))
 (def lp (System/getenv "LP"))
-
 (def admin    (System/getenv "WC_LOGIN"))
 (def password (System/getenv "WC_PASSWORD"))
 
@@ -164,7 +163,6 @@
                                average
                                f-to-f)])))))))
 
-
 (defn format-one
   [[type & rows]]
   (println rows)
@@ -181,23 +179,20 @@
        (str/join (mapv format-one reports))))
 
 (defn send-report
-  "send-report takes three arguments.
-   1, user(map)
-   2, report(string)
-   3. help message(string)"
-  [{:keys [name bot_name]} report help]
+  "send-report takes two arguments."
+  [{:keys [name bot_name]} text]
   (let [url (str lp "/api/push")]
     (println url name bot_name)
-    (println (str report "\n" help))
-    #_(curl/post url
-                 {:form-params {:name name
-                                :bot bot_name
-                                :text report}
-                  :follow-redirects false})))
+    (curl/post url
+               {:form-params {:name name
+                              :bot bot_name
+                              :text text}
+                :follow-redirects false})))
 
 (def hkimura (-> (filter #(= "hkimura" (:name %)) @users)
                  first))
 
+;; must use with caution
 (def saga-user (-> (filter #(= 51 (:id %)) @users)
                    first))
 
@@ -212,24 +207,33 @@
 (comment
   (fetch-data hkimura [1 76 77] [1 25 75])
   (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
-  (format-report (fetch-data saga-user [1 76 77] [1 25 75]))
+  ;;(format-report (fetch-data saga-user [1 76 77] [1 25 75]))
   (send-report hkimura
                (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
-               (help [1 25 75]))
-  (send-report saga-user
-               (format-report (fetch-data saga-user [1 76 77] [1 25 75]))
                (help [1 25 75]))
   :rcf)
 
 (defn reports
+  "(format-report) の戻り値にヘルプメッセージを出して送信。"
   [users types days]
-  (let [message (help days)]
+  (let [ message (help days)]
     (doseq [user users]
       (send-report user
-                   (format-report (fetch-data user types days))
-                   message))))
+                   (str
+                    (format-report (fetch-data user types days))
+                    "\n"
+                    message)))))
+
+(def admins (atom nil))
+(reset! admins [(filter #(= 16 (:id %)) @users)
+                (filter #(= 26 (:id %)) @users)])
+@admins
+(def me (atom (filter #(= 16 (:id %)) @users)))
+
 (comment
-  (reports @users [1 76 77] [1 25 75])
+  (reports @me [1 76 77] [1 25 75])
+  (reports @admins [1 76 77] [1 25 75])
+  ; clojure.lang.ExceptionInfo: babashka.curl: status 500 reports /Users/hkim/clojure/withings-reports/bb/reports.clj:11:5
   :rcf)
 
 (defn -main
