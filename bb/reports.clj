@@ -187,24 +187,26 @@
                  first))
 
 ;; must use with caution
-(def saga-user (-> (filter #(= 51 (:id %)) @users)
-                   first))
+;; (def saga-user (-> (filter #(= 51 (:id %)) @users)
+;;                    first))
 
 (defn help
   [days]
   (str "項目の下の3つの数字はそれぞれ"
-       (first days) "日前データ、"
+       (first days) "日前平均、"
        (second days) "日間平均、"
-       (nth days 2) "日間平均を表しています。\n"
-       "-- は欠測。"))
+       (nth days 2) "日間平均です。"
+       "-- は欠測。\n"
+       "先頭に🟡🔴がある場合は、25日平均、75日平均からの逸脱を表します。"))
 
 (comment
-  (fetch-data hkimura [1 76 77] [1 25 75])
+  (fetch-data hkimura [1 76 77] [1 7 28])
   (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
-  ;;(format-report (fetch-data saga-user [1 76 77] [1 25 75]))
   (send-report hkimura
-               (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
-               (help [1 25 75]))
+               (str
+                (format-report (fetch-data hkimura [1 76 77] [1 25 75]))
+                "\n"
+                (help [1 25 75])))
   :rcf)
 
 (defn reports
@@ -225,11 +227,11 @@
 (def me (atom (filter #(= 16 (:id %)) @users)))
 
 (comment
-  (reports @me [1 76 77] [1 25 75])
+  (reports @me [1 76 77] [1 7 28])
   (reports @admins [1 76 77] [1 25 75])
   ; clojure.lang.ExceptionInfo: babashka.curl: status 500 reports /Users/hkim/clojure/withings-reports/bb/reports.clj:11:5
   :rcf)
 
 (defn -main
   [& args]
-  (reports @users [1 76 77] [1 25 75]))
+  (reports @users [1 76 77] [1 7 28]))
