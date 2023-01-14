@@ -165,7 +165,7 @@
 
 (defn format-one
   [[type & rows]]
-  (println rows)
+  (log/debug rows)
   (str (kind type)
        "\n"
        (apply str (interpose " " (mapv second rows)))
@@ -182,7 +182,7 @@
   "send-report takes two arguments."
   [{:keys [name bot_name]} text]
   (let [url (str lp "/api/push")]
-    (println url name bot_name)
+    (log/debug url name bot_name)
     (curl/post url
                {:form-params {:name name
                               :bot bot_name
