@@ -27,6 +27,8 @@
 (def users (atom nil))
 (def measures (atom nil))
 
+(def debug println) ; or log/debug
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; utils
 (defn curl-get [url & params]
@@ -114,7 +116,7 @@
 (defn fetch-meas
   "Returns `id` measure `type` util today from `days` before."
   [{:keys [id type days]}]
-  ;; (println "fetch-meas" id type days)
+  ;; (debug "fetch-meas" id type days)
   (mysql/execute!
    db
    ["select measure, created from meas
@@ -148,7 +150,7 @@
    (fetch-average 51 [1 77] [1 7 28])
    if data lacks, returns [[d \"--\"] ...]"
   [{:keys [id]} types days]
-  (println "fetch-average" id types days)
+  (debug "fetch-average" id types days)
   (cons id
         (for [type types]
           (cons type
@@ -179,7 +181,7 @@
    (fetch-average 51 [1 77] [25 75])
    if data lacks, returns [[d \"--\"] ...]"
   [{:keys [id]} types days]
-  (println "fetch-sd" id types days)
+  (debug "fetch-sd" id types days)
   (cons id
         (for [type types]
           (cons type
@@ -199,62 +201,11 @@
 
 (defn format-one
   [[type & rows]]
-  (println "format-one" (kind type) rows)
+  (debug "format-one" (kind type) rows)
   (str (kind type)
        "\n"
        (apply str (interpose " " (mapv second rows)))
        "\n"))
-
-(defn get-type [a]
-  (first a))
-
-(defn get-value [a]
-  (-> a second second))
-
-(defn get-mean [av2 type days]
-  (->> av2
-       (filter #(= type (first %)))
-       (filter #(= days (first %)))
-       second))
-
-(defn get-sd [sd type days]
-  (get-mean sd type days))
-
-(comment
-  (let [av1 '((1 [1 --] [7 93.2] [28 93.55]) (76 [1 --] [7 --] [28 --]) (77 [1 --] [7 --] [28 --]))
-        av2 '((1 [25 93.55] [75 93.73]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))
-        sd '((1 [25 0.52] [75 0.46]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))
-        ]
-    (get-type (first av1))
-    (get-value (first av1))
-    )
-  :rcf)
-
-(defn report-2
-  "format-report を差し替える。
-   av2, sd を使って、av1 にマークをつけるかつけないかを決める。"
-  [[_ & av1] [_ & av2] [_ & sds]]
-  (println "report-2" av1)
-  (println "report-2" av2)
-  (println "report-2" sds)
-  (for [a av1]
-    (let [type  (get-type a)
-          val   (get-value a)
-          mean  (get-mean av2 type 25)
-          sd    (get-sd sds type 25)
-          warn  (abs (- val mean))]
-      (cond
-        (< (* 2 sd) warn) (cons "🔴" a)
-        (< sd warn) (cons "🟡" a)
-        :else a))))
-
-
-(comment
-  (report-2
-   (fetch-average hkimura [1 76 77] [1 7 28])
-   (fetch-average hkimura [1 76 77] [25 75])
-   (fetch-sd hkimura [1 76 77] [25 75]))
-  :rcf)
 
 (defn format-report
   "Returns string"
@@ -268,14 +219,12 @@
   "send-report takes two arguments."
   [{:keys [name bot_name]} text]
   (let [url (str lp "/api/push")]
-    (println url name bot_name)
+    (debug url name bot_name)
     (curl/post url
                {:form-params {:name name
                               :bot bot_name
                               :text text}
                 :follow-redirects false})))
-
-
 
 (defn help
   [days]
@@ -286,11 +235,73 @@
        "-- は欠測。\n"
        "先頭に🟡🔴がある場合は、25日平均、75日平均からの逸脱を表します。"))
 
+(defn get-types [ave1]
+  (->> ave1
+      first
+      rest
+      (map first)))
+
+(defn get-days2 [ave2]
+  (get-types ave2))
+
+(defn get-data
+  "format-one に渡すデータを作る"
+  [type data]
+  (filter #(= type (first %)) data))
+
+;; (defn get-type [a]
+;;   (first a))
+
+;; (defn get-value [a]
+;;   (-> a second second))
+
+;; (defn get-mean [av2 type days]
+;;   (->> av2
+;;        (filter #(= type (first %)))
+;;        (filter #(= days (first %)))
+;;        second))
+
+;; (defn get-sd [sd type days]
+;;   (get-mean sd type days))
+
 (comment
-  (fetch-average hkimura [1 76 77] [1 7 28])
+  (let [av1 '((1 [1 --] [7 93.2] [28 93.55]) (76 [1 --] [7 --] [28 --]) (77 [1 --] [7 --] [28 --]))
+        av2 '((1 [25 93.55] [75 93.73]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))
+        sd '((1 [25 0.52] [75 0.46]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))]
+    (get-types av1)
+    (get-days2 av2)
+    (get-data 76 av1)
+    ;;(get-type (first av1))
+    ;;(get-value (first av1))
+    )
+  :rcf)
+
+(defn warn
+  "av1, av2, sd2 は ave1, ave2, sd2 よりも１レベル細かい。"
+  [days2 av1 av2 sd2]
+  (debug "warn" days2 av1 av2 sd2)
+  )
+(defn make-report
+  [ave1 ave2 sd2]
+  (let [types (get-types ave1)
+        days2 (get-days2 ave2)]
+    (for [type types]
+      (let [warns (warn days2
+                        (get-data type ave1) ;;
+                        (get-data type ave2)
+                        (get-data type sd2))
+            data (format-one [type (get-data type ave1)])]
+        (str warns data)))))
+
+(comment
+  (make-report
+   (fetch-average hkimura [1 76 77] [1 7 28])
+   (fetch-average hkimura [1 76 77] [25 75])
+   (fetch-sd hkimura [1 76 77] [25 75]))
+  ;;
   (send-report hkimura
                (str
-                (report-2
+                (make-report
                  (fetch-average hkimura [1 76 77] [1 7 28])
                  (fetch-average hkimura [1 76 77] [25 75])
                  (fetch-sd hkimura [1 76 77] [25 75]))
@@ -307,12 +318,6 @@
                   (format-report (fetch-average user types days))
                   "\n"
                   (help days)))))
-
-;; (def admins (atom nil))
-;; (reset! admins [(filter #(= 16 (:id %)) @users) ;; hkimura
-;;                 (filter #(= 26 (:id %)) @users) ;; ishii
-;;                ])
-
 
 (comment
   (reports [hkimura] [1 76 77] [1 7 28])
