@@ -313,9 +313,10 @@
 (reset! admins [(filter #(= 16 (:id %)) @users)
                 (filter #(= 26 (:id %)) @users)])
 
+
 (comment
-  (reports [@hkimura] [1 76 77] [1 7 28])
-  (reports @admins [1 76 77] [1 7 28])
+  (reports [hkimura] [1 76 77] [1 7 28])
+  ;;(reports @admins [1 76 77] [1 7 28])
   :rcf)
 
 (defn -main
