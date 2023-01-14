@@ -301,17 +301,17 @@
 (defn reports
   "(format-report) の戻り値にヘルプメッセージを出して送信。"
   [users types days]
-  (let [ message (help days)]
-    (doseq [user users]
-      (send-report user
-                   (str
-                    (format-report (fetch-average user types days))
-                    "\n"
-                    message)))))
+  (doseq [user users]
+    (send-report user
+                 (str
+                  (format-report (fetch-average user types days))
+                  "\n"
+                  (help days)))))
 
-(def admins (atom nil))
-(reset! admins [(filter #(= 16 (:id %)) @users)
-                (filter #(= 26 (:id %)) @users)])
+;; (def admins (atom nil))
+;; (reset! admins [(filter #(= 16 (:id %)) @users) ;; hkimura
+;;                 (filter #(= 26 (:id %)) @users) ;; ishii
+;;                ])
 
 
 (comment
