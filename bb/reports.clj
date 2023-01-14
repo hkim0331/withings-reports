@@ -103,21 +103,10 @@
   (kind 77)
   :rcf)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; fetch meas
-;; (defn fetch-meas
-;;   "returns [{:meas/measure 81.2 :meas/created #inst \"2022-12-11..\"} ...]"
-;;   [id type since]
-;;   (log/info "fetch-meas" id type since)
-;;   (mysql/execute!
-;;    db
-;;    ["select measure from meas
-;;      where user_id=? and type=? and created >?"
-;;     id type since]))
-
-(defn fetch-meas-before
+(defn fetch-meas
   "Returns `id` measure `type` util today from `days` before."
-  [id type days]
+  [{:keys [id type days]}]
+  (log/debug "fetch-meas" id type days)
   (mysql/execute!
    db
    ["select measure, created from meas
@@ -128,7 +117,7 @@
     id type days]))
 
 (comment
-  (fetch-meas-before 16 1 75)
+  (fetch-meas {:id 16 :type 1 :days 75})
   :rcf)
 
 (defn average
@@ -145,23 +134,28 @@
   (f-to-f 3.14159265)
   :rcf)
 
-;; changed type -> types
 (defn fetch-data
   "Fetch user `id` data.
+   fetch user id 51's type 1 and 77 in days 25 ad 75 days,
    (fetch-data 51 [1 77] [25 75])
    if data lacks, returns [[d \"--\"] ...]
    json?"
   [{:keys [id]} types days]
+  (log/debug "fetch-data" id types days)
   (cons id
         (for [type types]
-         (cons type
+          (cons type
                 (for [day days]
-                  (let [xs (fetch-meas-before id type day)]
+                  (let [xs (fetch-meas {:id id :type type :days day})]
                     (if (empty? xs)
                       [day "--"]
                       [day (-> (map :meas/measure xs)
                                average
                                f-to-f)])))))))
+
+(comment
+  (fetch-data {:id 16} [1] [3 10 75])
+  :rcf)
 
 (defn format-one
   [[type & rows]]
