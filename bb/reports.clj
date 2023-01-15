@@ -53,6 +53,29 @@
   (now)
   :rcf)
 
+(defn f-to-f [f]
+  (-> f
+      (* 100)
+      int
+      (/ 100.0)))
+
+(defn average
+  [xs]
+  (/ (reduce + xs) (count xs)))
+
+(comment
+  (f-to-f 3.14159265)
+  :rcf)
+
+(defn sq [x] (* x x))
+
+(defn sd
+  "return Standard Deviation. denominator = n-1."
+  [xs]
+  (let [x-bar (average xs)
+        n (- (count xs) 1)]
+    (sqrt (/ (reduce + (map #(sq (- x-bar %)) xs)) n))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; login, users, measures
 (defn login
@@ -130,19 +153,7 @@
   (fetch-meas {:id 16 :type 1 :days 75})
   :rcf)
 
-(defn average
-  [xs]
-  (/ (reduce + xs) (count xs)))
 
-(defn f-to-f [f]
-  (-> f
-      (* 100)
-      int
-      (/ 100.0)))
-
-(comment
-  (f-to-f 3.14159265)
-  :rcf)
 
 (defn fetch-average
   "Fetch user id's averaged data.
@@ -151,28 +162,18 @@
    if data lacks, returns [[d \"--\"] ...]"
   [{:keys [id]} types days]
   (debug "fetch-average" id types days)
-  (for [type types]
-    (cons type
-          (for [day days]
-            (let [xs (fetch-meas {:id id :type type :days day})]
-              (if (empty? xs)
-                [day "--"]
-                [day (-> (map :meas/measure xs)
-                         average
-                         f-to-f)]))))))
-
-(defn sq [x] (* x x))
-
-(defn sd
-  "return Standard Deviation. denominator = n-1."
-  [xs]
-  (let [x-bar (average xs)
-        n (- (count xs) 1)]
-    (sqrt (/ (reduce + (map #(sq (- x-bar %)) xs)) n))))
-
-(comment
-  (sd (range 10))
-  :rcf)
+  (vec
+   (for [type types]
+     {:type type
+      :values (vec
+              (for [day days]
+                (let [xs (fetch-meas {:id id :type type :days day})]
+                  {:days day
+                   :average (if (empty? xs)
+                              "--"
+                              (-> (map :meas/measure xs)
+                                  average
+                                  f-to-f))})))})))
 
 (defn fetch-sd
   "Fetch user-id's sd values.
@@ -181,15 +182,19 @@
    if data lacks, returns [[d \"--\"] ...]"
   [{:keys [id]} types days]
   (debug "fetch-sd" id types days)
-  (for [type types]
-    (cons type
-          (for [day days]
-            (let [xs (fetch-meas {:id id :type type :days day})]
-              (if (empty? xs)
-                [day "--"]
-                [day (-> (map :meas/measure xs)
-                         sd
-                         f-to-f)]))))))
+  (vec
+   (for [type types]
+    {:type type
+     :values
+     (vec
+      (for [day days]
+       (let [xs (fetch-meas {:id id :type type :days day})]
+         {:days day
+          :sd (if (empty? xs)
+                   "--"
+                   (-> (map :meas/measure xs)
+                       sd
+                       f-to-f))})))})))
 
 (comment
   [(fetch-average {:id 16} [1 77 78] [1 7 28])
@@ -197,21 +202,102 @@
    (fetch-sd {:id 16} [1 77 78] [25 75])]
   :rcf)
 
+
+
+
+
+(defn help
+  [days]
+  (str "項目の下の3つの数字はそれぞれ"
+       (first days) "日前平均、"
+       (second days) "日間平均、"
+       (nth days 2) "日間平均です。"
+       "-- は欠測。\n"
+       "先頭に🟡🔴がある場合は、25日平均、75日平均からの逸脱を表します。"))
+
+;; make-report
+(defn get-types [av1]
+  (mapv :type av1))
+
+(defn get-days [av]
+  (->> av
+       first
+       :values
+       (mapv :days)))
+
+(defn get-averages
+  [type av]
+  (let [values (->> av
+                    (filter #(= type (:type %)))
+                    first
+                    :values)]
+    {:type type :values values}))
+
+(defn get-sd
+  "get-average と同じ。"
+  [type sd2]
+  (get-averages type sd2))
+
+; 🔵 🟡 🔴
+;;warn 25 ([2 51.8] [7 51.04] [28 51.04])
+;;        ([25 51.04] [75 49.5])
+;;        ((76 [25 0.74] [75 1.41]) (77 [25 0.81] [75 1.77]))
+(defn warn
+  [day [_ & av1] [_ & av2] [_ & sd2]]
+  (debug "warn" day av1 av2 sd2)
+  (let [data (-> av1 first second)]
+    (if (= data "--")
+      ""
+      (let [mean (get-averages type av2)
+            sd   (get-sd day sd2)]))
+    "🔵"))
+
+(defn warns
+  [days2 av1 av2 sd2]
+  (mapv #(warn % av1 av2 sd2) days2))
+
 (defn format-one
-  [[type & [rows]]]
-  (debug "format-one" (kind type) rows)
-  (str (kind type)
-       "\n"
-       (apply str (interpose " " (rest rows)))
-       "\n"))
+  [{:keys [type values]}]
+  (let [days (mapv :days values)
+        averages (mapv :average values)]
+    (debug "format-one" (kind type))
+    (str (kind type)
+         "\n"
+         (apply str (interpose ", " averages))
+         "\n")))
 
 (defn format-report
   "Returns string"
   [[_ & reports]]
   (str (now)
        "\n"
-       (str/join (mapv format-one reports))))
+       (str/join  (mapv format-one reports))))
 
+(defn make-report
+  [av1 av2 sd2]
+  (let [types (get-types av1)
+        days2 (get-days av2)]
+    (for [type types]
+      (let [warns (warns days2
+                         (get-averages type av1) ;;
+                         (get-averages type av2)
+                         (get-sd       type sd2))
+            data (format-one (get-averages type av1))]
+        (debug "\t" "type" type "warns" warns "data" data)
+        [warns data]))))
+
+(comment
+  (def av1 (fetch-average saga-user [1 76 77] [2 7 28]))
+  (def av2 (fetch-average saga-user [1 76 77] [25 75]))
+  (def sd2 (fetch-sd saga-user [1 76 77] [25 75]))
+  (get-types av1)
+  (get-days av1)
+  (get-days av2)
+  (get-averages 77 av1)
+  (get-averages 76 av2)
+  (format-one (get-averages 1 av1))
+  (make-report av1 av2 sd2)
+ :rcf)
 
 (defn send-report
   "send-report takes two arguments."
@@ -223,101 +309,6 @@
                               :bot bot_name
                               :text text}
                 :follow-redirects false})))
-
-(defn help
-  [days]
-  (str "項目の下の3つの数字はそれぞれ"
-       (first days) "日前平均、"
-       (second days) "日間平均、"
-       (nth days 2) "日間平均です。"
-       "-- は欠測。\n"
-       "先頭に🟡🔴がある場合は、25日平均、75日平均からの逸脱を表します。"))
-
-(defn get-types [ave1]
-  (mapv first ave1))
-
-(defn get-days2 [ave2]
-  (debug "get-days2 ave2:" ave2)
-  (->> ave2
-      first
-      rest
-      (map first)))
-
-(defn get-data
-  "format-one に渡すデータを作る。
-   (get-data 77 av1) => (77 [25 51.04] [75 49.5])"
-  [type data]
-  (let [ret (first (filter #(= type (first %)) data))]
-    (debug "get-data" type data)
-    (debug "\tret:" ret)
-    ret))
-
-;; 🔵 🟡 🔴
-;;warn 25 ([2 51.8] [7 51.04] [28 51.04])
-;;        ([25 51.04] [75 49.5])
-;;        ((76 [25 0.74] [75 1.41]) (77 [25 0.81] [75 1.77]))
-(defn get-mean
-  [day data]
-  (filter #(= day (first %) data)))
-
-(defn get-sd
-  [day data]
-  (filter #(= day (first %) data)))
-
-(defn warn
-  [day [_ & av1] [_ & av2] [_ & sd2]]
-  (debug "warn" day av1 av2 sd2)
-  (let [data (-> av1 first second)]
-    (if (= data "--")
-      ""
-      (let [mean (get-mean day av2)
-            sd   (get-sd day sd2)]))
-     "🔵"))
-
-(defn warns
-  [days2 av1 av2 sd2]
-  (mapv #(warn % av1 av2 sd2) days2))
-
-(defn make-report
-  [ave1 ave2 sd2]
-  (debug :ave1 ave1)
-  (debug :ave2 ave2)
-  (debug :sd2 sd2)
-  (let [types (get-types ave1)
-        days2 (get-days2 ave2)]
-    (debug "make-report types:" types "days2:" days2)
-    (for [type types]
-      (let [warns (warns days2
-                        (get-data type ave1) ;;
-                        (get-data type ave2)
-                        sd2)
-            data (format-one [type (get-data type ave1)])]
-        (debug "\t" "type" type "warns" warns "data" data)
-        [warns data]))))
-
-(comment
-  ;;(debug "hello" "world" 3.14)
-  (let [av1 '((1 [1 --] [7 93.2] [28 93.55]) (76 [1 --] [7 --] [28 --]) (77 [1 --] [7 --] [28 --]))
-        av2 '((1 [25 93.55] [75 93.73]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))
-        sd '((1 [25 0.52] [75 0.46]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))]
-    (debug (get-types av1))
-    (get-data 76 av1)
-    (get-data 1 av1))
-  ;;
-  (make-report
-   (fetch-average saga-user [1 76 77] [2 7 28])
-   (fetch-average saga-user [1 76 77] [25 75])
-   (fetch-sd saga-user [1 76 77] [25 75]))
-  ;;
-  #_(send-report hkimura
-                 (str
-                  (make-report
-                   (fetch-average hkimura [1 76 77] [1 7 28])
-                   (fetch-average hkimura [1 76 77] [25 75])
-                   (fetch-sd hkimura [1 76 77] [25 75]))
-                  "\n"
-                  (help [1 7 28])))
-  :rcf)
 
 (defn reports
   "(format-report) の戻り値にヘルプメッセージを出して送信。"
