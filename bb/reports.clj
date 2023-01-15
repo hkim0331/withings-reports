@@ -151,16 +151,15 @@
    if data lacks, returns [[d \"--\"] ...]"
   [{:keys [id]} types days]
   (debug "fetch-average" id types days)
-  (cons id
-        (for [type types]
-          (cons type
-                (for [day days]
-                  (let [xs (fetch-meas {:id id :type type :days day})]
-                    (if (empty? xs)
-                      [day "--"]
-                      [day (-> (map :meas/measure xs)
-                               average
-                               f-to-f)])))))))
+  (for [type types]
+    (cons type
+          (for [day days]
+            (let [xs (fetch-meas {:id id :type type :days day})]
+              (if (empty? xs)
+                [day "--"]
+                [day (-> (map :meas/measure xs)
+                         average
+                         f-to-f)]))))))
 
 (defn sq [x] (* x x))
 
@@ -182,16 +181,15 @@
    if data lacks, returns [[d \"--\"] ...]"
   [{:keys [id]} types days]
   (debug "fetch-sd" id types days)
-  (cons id
-        (for [type types]
-          (cons type
-                (for [day days]
-                  (let [xs (fetch-meas {:id id :type type :days day})]
-                    (if (empty? xs)
-                      [day "--"]
-                      [day (-> (map :meas/measure xs)
-                               sd
-                               f-to-f)])))))))
+  (for [type types]
+    (cons type
+          (for [day days]
+            (let [xs (fetch-meas {:id id :type type :days day})]
+              (if (empty? xs)
+                [day "--"]
+                [day (-> (map :meas/measure xs)
+                         sd
+                         f-to-f)]))))))
 
 (comment
   [(fetch-average {:id 16} [1 77 78] [1 7 28])
@@ -239,7 +237,7 @@
   (->> ave1
       first
       rest
-      (map first)))
+      (mapv first)))
 
 (defn get-days2 [ave2]
   (get-types ave2))
@@ -268,15 +266,14 @@
   (let [av1 '((1 [1 --] [7 93.2] [28 93.55]) (76 [1 --] [7 --] [28 --]) (77 [1 --] [7 --] [28 --]))
         av2 '((1 [25 93.55] [75 93.73]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))
         sd '((1 [25 0.52] [75 0.46]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))]
-    (get-types av1)
+    (debug (get-types av1))
     ;;(get-days2 av2)
     ;;(get-data 76 av1)
     ;;(get-type (first av1))
     ;;(get-value (first av1))
-    (for [type (vec (get-types av1))]
-      (debug type))
+    (for [type (get-types av1)]
+      type)
     )
-  
   :rcf)
 
 (defn warn
@@ -292,19 +289,18 @@
   (debug sd2)
   (let [types (get-types ave1)
         days2 (get-days2 ave2)]
-    (debug types)
-    #_(for [type types]
-      (debug type)
-      #_(let [warns (warn days2
-                          (get-data type ave1) ;;
-                          (get-data type ave2)
-                          (get-data type sd2))
-              data (format-one [type (get-data type ave1)])]
-          (debug "\t" type warns data)
-          (str warns data)))))
+    (debug "types" types "days2" days2)
+    (for [type types]
+      (let [warns (warn days2
+                        (get-data type ave1) ;;
+                        (get-data type ave2)
+                        (get-data type sd2))
+            data (format-one [type (get-data type ave1)])]
+        (debug "\t" "type" type "warns" warns "data" data)
+        (str warns data)))))
 
 (comment
-  (debug "hello" "world" 3.14)
+  ;;(debug "hello" "world" 3.14)
   (make-report
    (fetch-average hkimura [1 76 77] [1 7 28])
    (fetch-average hkimura [1 76 77] [25 75])
