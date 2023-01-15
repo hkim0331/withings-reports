@@ -22,11 +22,6 @@
 (def admin    (System/getenv "WC_LOGIN"))
 (def password (System/getenv "WC_PASSWORD"))
 
-(def cookie "reports.txt")
-
-(def users (atom nil))
-(def measures (atom nil))
-
 (def debug println) ; or log/debug
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -63,10 +58,6 @@
   [xs]
   (/ (reduce + xs) (count xs)))
 
-(comment
-  (f-to-f 3.14159265)
-  :rcf)
-
 (defn sq [x] (* x x))
 
 (defn sd
@@ -76,8 +67,18 @@
         n (- (count xs) 1)]
     (sqrt (/ (reduce + (map #(sq (- x-bar %)) xs)) n))))
 
+(comment
+  (f-to-f 3.14159265)
+  (f-to-f (average (range 10)))
+  (sd (range 10))
+  :rcf)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; login, users, measures
+(def cookie "reports.txt")
+(def users (atom nil))
+(def measures (atom nil))
+
 (defn login
   "login. if success, updates cookie and returns 302."
   []
@@ -202,10 +203,6 @@
    (fetch-sd {:id 16} [1 77 78] [25 75])]
   :rcf)
 
-
-
-
-
 (defn help
   [days]
   (str "項目の下の3つの数字はそれぞれ"
@@ -256,7 +253,6 @@
        "\n"
        (str/join  (mapv format-one reports))))
 
-
 ;; 🔵 🟡 🔴
 ;; warn :day 25
 ;;      :av1 {:type 1, :values [{:days 2, :average 81.8} {:days 7, :average 81.03} {:days 28, :average 81.03}]}
@@ -284,6 +280,7 @@
     ;; (debug "\t" :value value)
     ;; (debug "\t" :mean mean)
     ;; (debug "\t" :sd sd)
+    (debug :warn :value value :mean mean :sd sd)
     (if (or (= value "--") (= mean "--") (= sd "--"))
       "-"
       (let [diff (abs (- value mean))]
@@ -294,7 +291,6 @@
 
 (defn warns
   [days2 av1 av2 sd2]
-  (debug "warns")
   (mapv #(warn % av1 av2 sd2) days2))
 
 (defn make-report
@@ -315,11 +311,9 @@
 
 (comment
   (def ex-user hkimura)
-  (def av1 (fetch-average ex-user [1 76 77] [2 7 28]))
+  (def av1 (fetch-average ex-user [1 76 77] [3 7 28]))
   (def av2 (fetch-average ex-user [1 76 77] [25 75]))
   (def sd2 (fetch-sd ex-user [1 76 77] [25 75]))
-  ;;(get-types av1)
-  ;;(get-days av1)
   (format-one (get-averages 1 av1))
   (warns
    (get-days av2)
@@ -348,15 +342,13 @@
           av2 (fetch-average user types days2)
           sd2 (fetch-sd      user types days2)
           report (str/join (make-report av1 av2 sd2))]
-      ;;(debug :report report)
-      (send-report user (str report "\n" (help days))))))
+      (debug :report report)
+      #_(send-report user (str report "\n" (help days))))))
 
 (comment
-  (reports [hkimura] [1 76 77] [2 7 28] [25 75])
+  (reports [saga-user] [1 76 77] [1 7 28] [25 75])
   :rcf)
-
 
 (defn -main
   [& args]
   (reports @users [1 76 77] [1 7 28] [25 75]))
- 
