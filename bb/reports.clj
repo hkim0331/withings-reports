@@ -83,8 +83,8 @@
                  first))
 
 ;; must use with caution
-;; (def saga-user (-> (filter #(= 51 (:id %)) @users)
-;;                    first))
+(def saga-user (-> (filter #(= 51 (:id %)) @users)
+                   first))
 
 (defn fetch-measures
   "fetch measures via withing-client,
@@ -198,11 +198,11 @@
   :rcf)
 
 (defn format-one
-  [[type & rows]]
+  [[type & [rows]]]
   (debug "format-one" (kind type) rows)
   (str (kind type)
        "\n"
-       (apply str (interpose " " (mapv second rows)))
+       (apply str (interpose " " (rest rows)))
        "\n"))
 
 (defn format-report
@@ -234,10 +234,7 @@
        "先頭に🟡🔴がある場合は、25日平均、75日平均からの逸脱を表します。"))
 
 (defn get-types [ave1]
-  (->> ave1
-      first
-      rest
-      (mapv first)))
+  (mapv first ave1))
 
 (defn get-days2 [ave2]
   (get-types ave2))
@@ -245,7 +242,10 @@
 (defn get-data
   "format-one に渡すデータを作る"
   [type data]
-  (filter #(= type (first %)) data))
+ (let [ret (first (filter #(= type (first %)) data))]
+   (debug "get-data" type data)
+   (debug "\tret:" ret)
+   ret))
 
 ;; (defn get-type [a]
 ;;   (first a))
@@ -262,19 +262,6 @@
 ;; (defn get-sd [sd type days]
 ;;   (get-mean sd type days))
 
-(comment
-  (let [av1 '((1 [1 --] [7 93.2] [28 93.55]) (76 [1 --] [7 --] [28 --]) (77 [1 --] [7 --] [28 --]))
-        av2 '((1 [25 93.55] [75 93.73]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))
-        sd '((1 [25 0.52] [75 0.46]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))]
-    (debug (get-types av1))
-    ;;(get-days2 av2)
-    ;;(get-data 76 av1)
-    ;;(get-type (first av1))
-    ;;(get-value (first av1))
-    (for [type (get-types av1)]
-      type)
-    )
-  :rcf)
 
 (defn warn
   "av1, av2, sd2 は ave1, ave2, sd2 よりも１レベル細かい。"
@@ -291,7 +278,8 @@
         days2 (get-days2 ave2)]
     (debug "types" types "days2" days2)
     (for [type types]
-      (let [warns (warn days2
+      (let [_ (debug type type "ave1" ave1)
+            warns (warn days2
                         (get-data type ave1) ;;
                         (get-data type ave2)
                         (get-data type sd2))
@@ -301,19 +289,26 @@
 
 (comment
   ;;(debug "hello" "world" 3.14)
+  (let [av1 '((1 [1 --] [7 93.2] [28 93.55]) (76 [1 --] [7 --] [28 --]) (77 [1 --] [7 --] [28 --]))
+        av2 '((1 [25 93.55] [75 93.73]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))
+        sd '((1 [25 0.52] [75 0.46]) (76 [25 --] [75 --]) (77 [25 --] [75 --]))]
+    (debug (get-types av1))
+    (get-data 76 av1)
+    (get-data 1 av1))
+  ;;
   (make-report
-   (fetch-average hkimura [1 76 77] [1 7 28])
-   (fetch-average hkimura [1 76 77] [25 75])
-   (fetch-sd hkimura [1 76 77] [25 75]))
+   (fetch-average saga-user [1 76 77] [1 7 28])
+   (fetch-average saga-user [1 76 77] [25 75])
+   (fetch-sd saga-user [1 76 77] [25 75]))
   ;;
   #_(send-report hkimura
-               (str
-                (make-report
-                 (fetch-average hkimura [1 76 77] [1 7 28])
-                 (fetch-average hkimura [1 76 77] [25 75])
-                 (fetch-sd hkimura [1 76 77] [25 75]))
-                "\n"
-                (help [1 7 28])))
+                 (str
+                  (make-report
+                   (fetch-average hkimura [1 76 77] [1 7 28])
+                   (fetch-average hkimura [1 76 77] [25 75])
+                   (fetch-sd hkimura [1 76 77] [25 75]))
+                  "\n"
+                  (help [1 7 28])))
   :rcf)
 
 (defn reports
