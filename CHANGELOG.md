@@ -5,7 +5,7 @@
 
 ## 0.6.2 - 2023-01-15
 - log の整理
-
+- lack icon の選択 😨, 😱, 😰, 🌚, 💤, 🤢, 👻, 👎, 
 ## 0.6.1 - 2023-01-15
 on kohhou with VScode remote ssh
 - updated systemd/Makefile
