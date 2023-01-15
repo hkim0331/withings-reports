@@ -6,6 +6,8 @@
 
 ## 0.6.0 - 2023-01-15
 - kohhou にデプロイ、テスト
+### Added
+- systemd/Makefile
 
 ## 0.5.1 - 2023-01-15
 - reports に optional 引数。あれば送信しない。
