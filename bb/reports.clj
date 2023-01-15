@@ -22,11 +22,6 @@
 (def admin    (System/getenv "WC_LOGIN"))
 (def password (System/getenv "WC_PASSWORD"))
 
-(def cookie "reports.txt")
-
-(def users (atom nil))
-(def measures (atom nil))
-
 (def debug println) ; or log/debug
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -63,10 +58,6 @@
   [xs]
   (/ (reduce + xs) (count xs)))
 
-(comment
-  (f-to-f 3.14159265)
-  :rcf)
-
 (defn sq [x] (* x x))
 
 (defn sd
@@ -76,8 +67,18 @@
         n (- (count xs) 1)]
     (sqrt (/ (reduce + (map #(sq (- x-bar %)) xs)) n))))
 
+(comment
+  (f-to-f 3.14159265)
+  (f-to-f (average (range 10)))
+  (sd (range 10))
+  :rcf)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; login, users, measures
+(def cookie "reports.txt")
+(def users (atom nil))
+(def measures (atom nil))
+
 (defn login
   "login. if success, updates cookie and returns 302."
   []
@@ -202,10 +203,6 @@
    (fetch-sd {:id 16} [1 77 78] [25 75])]
   :rcf)
 
-
-
-
-
 (defn help
   [days]
   (str "項目の下の3つの数字はそれぞれ"
@@ -256,7 +253,6 @@
        "\n"
        (str/join  (mapv format-one reports))))
 
-
 ;; 🔵 🟡 🔴
 ;; warn :day 25
 ;;      :av1 {:type 1, :values [{:days 2, :average 81.8} {:days 7, :average 81.03} {:days 28, :average 81.03}]}
@@ -264,7 +260,6 @@
 ;       :sd2 {:type 1, :values [{:days 25, :sd 0.84} {:days 75, :sd 1.12}]}
 (defn warn
   [day av1 av2 sd2]
-  (debug "warn" :day day :av1 av1 :av2 av2 :sd2 sd2)
   (let [days (->> av1 :values (mapv :days))
         value (->> av1
                    :values
@@ -281,12 +276,13 @@
                 (filter #(= day (:days %)))
                 first
                 :sd)]
-    (debug "\t" :days days)
-    (debug "\t" :value value)
-    (debug "\t" :mean mean)
-    (debug "\t" :sd sd)
+    ;; (debug "\t" :days days)
+    ;; (debug "\t" :value value)
+    ;; (debug "\t" :mean mean)
+    ;; (debug "\t" :sd sd)
+    (debug :warn :value value :mean mean :sd sd)
     (if (or (= value "--") (= mean "--") (= sd "--"))
-      ""
+      "-"
       (let [diff (abs (- value mean))]
         (cond
           (< diff sd) "🔵"
@@ -299,31 +295,32 @@
 
 (defn make-report
   [av1 av2 sd2]
+  (debug "make-report")
   (let [types (get-types av1)
         days2 (get-days av2)]
-    (doall (for [type types]
-             (let [warns (warns days2
-                                (get-averages type av1) ;;
-                                (get-averages type av2)
-                                (get-sd       type sd2))
-                   report (format-one (get-averages type av1))]
-               (debug "\t" :type type :warns warns :report report)
-               (str (str/join warns) report))))))
+    ;;(doall (for [type types]
+    (mapv #(let [warns (warns days2
+                              (get-averages % av1)
+                              (get-averages % av2)
+                              (get-sd       % sd2))
+                 report (format-one (get-averages % av1))]
+             ;; (debug "\t" :type % :warns warns :report report)
+             (debug :warns warns)
+             (debug :report report)
+             (str (str/join warns) report)) types)))
 
 (comment
   (def ex-user hkimura)
-  (def av1 (fetch-average ex-user [1 76 77] [2 7 28]))
+  (def av1 (fetch-average ex-user [1 76 77] [3 7 28]))
   (def av2 (fetch-average ex-user [1 76 77] [25 75]))
   (def sd2 (fetch-sd ex-user [1 76 77] [25 75]))
-  ;;(get-types av1)
-  ;;(get-days av1)
   (format-one (get-averages 1 av1))
   (warns
    (get-days av2)
    (get-averages 1 av1)
    (get-averages 1 av2)
    (get-sd 1 sd2))
-  (make-report av1 av2 sd2)
+  (str/join (make-report av1 av2 sd2))
   :rcf)
 
 (defn send-report
@@ -341,23 +338,17 @@
   "(format-report) の戻り値にヘルプメッセージを出して送信。"
   [users types days days2]
   (doseq [user users]
-    (let [report (make-report
-                  (fetch-average user types days)
-                  (fetch-average user types days2)
-                  (fetch-sd      user types days2))]
+    (let [av1 (fetch-average user types days)
+          av2 (fetch-average user types days2)
+          sd2 (fetch-sd      user types days2)
+          report (str/join (make-report av1 av2 sd2))]
       (debug :report report)
-      (send-report user
-                   (str
-                    report
-                    "\n"
-                    (help days))))))
+      #_(send-report user (str report "\n" (help days))))))
 
 (comment
-  (reports [hkimura] [1 76 77] [1 7 28] [25 75])
+  (reports [saga-user] [1 76 77] [1 7 28] [25 75])
   :rcf)
-
 
 (defn -main
   [& args]
   (reports @users [1 76 77] [1 7 28] [25 75]))
- 
