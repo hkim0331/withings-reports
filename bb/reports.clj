@@ -257,19 +257,41 @@
        (str/join  (mapv format-one reports))))
 
 
-; 🔵 🟡 🔴
-;;warn 25 ([2 51.8] [7 51.04] [28 51.04])
-;;        ([25 51.04] [75 49.5])
-;;        ((76 [25 0.74] [75 1.41]) (77 [25 0.81] [75 1.77]))
+;; 🔵 🟡 🔴
+;; warn :day 25
+;;      :av1 {:type 1, :values [{:days 2, :average 81.8} {:days 7, :average 81.03} {:days 28, :average 81.03}]}
+;;      :av2 {:type 1, :values [{:days 25, :average 81.03} {:days 75, :average 81.26}]}
+;       :sd2 {:type 1, :values [{:days 25, :sd 0.84} {:days 75, :sd 1.12}]}
 (defn warn
   [day av1 av2 sd2]
-  (debug "warn" day av1 av2 sd2)
-  (let [data (-> av1 first second)]
-    (if (= data "--")
+  (debug "warn" :day day :av1 av1 :av2 av2 :sd2 sd2)
+  (let [days (->> av1 :values (mapv :days))
+        value (->> av1
+                   :values
+                   (filter #(= (first days) (:days %)))
+                   first
+                   :average)
+        mean (->> av2
+                  :values
+                  (filter #(= day (:days %)))
+                  first
+                  :average)
+        sd (->> sd2
+                :values
+                (filter #(= day (:days %)))
+                first
+                :sd)]
+    (debug "\t" :days days)
+    (debug "\t" :value value)
+    (debug "\t" :mean mean)
+    (debug "\t" :sd sd)
+    (if (or (= value "--") (= mean "--") (= sd "--"))
       ""
-      (let [mean (get-averages type av2)
-            sd   (get-sd day sd2)]))
-    "🔵"))
+      (let [diff (abs (- value mean))]
+        (cond
+          (< diff sd) "_"
+          (< diff (* 2 sd)) "🟡"
+          :else "🔴")))))
 
 (defn warns
   [days2 av1 av2 sd2]
@@ -300,10 +322,8 @@
    (get-averages 1 av1)
    (get-averages 1 av2)
    (get-sd 1 sd2))
-  ;;(make-report av1 av2 sd2)
+  (make-report av1 av2 sd2)
   :rcf)
-
-
 
 (defn send-report
   "send-report takes two arguments."
