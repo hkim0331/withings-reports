@@ -209,7 +209,8 @@
        (second days) "日間平均、"
        (nth days 2) "日間平均です。"
        "-- は欠測。\n"
-       "先頭に🟡🔴がある場合は、25日平均、75日平均からの逸脱を表します。"))
+       "先頭に🟡🔴がある場合は、"
+       "1日前平均が25日平均、75日平均からの逸脱を表します。"))
 
 ;; make-report
 (defn get-types [av1]
@@ -347,19 +348,9 @@
         (send-report user (str report "\n" (help days)))))))
 
 (comment
-  (reports [hkimura] [1 76 77] [1 7 28] [25 75])
+  (reports [hkimura] [1 76 77] [1 7 28] [25 75] :debug)
   :rcf)
 
 (defn -main
   [& args]
   (reports @users [1 76 77] [1 7 28] [25 75]))
-
-(comment
-  (defn f [_ & debug]
-    (if debug
-      :develop
-      :production))
-  (f 1)
-  (f 1 true)
-  (f 1 false)
-  :rcf)
