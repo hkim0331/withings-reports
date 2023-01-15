@@ -246,18 +246,18 @@
          (apply str (interpose ", " averages))
          "\n")))
 
-(defn format-report
-  "Returns string"
-  [[_ & reports]]
-  (str (now)
-       "\n"
-       (str/join  (mapv format-one reports))))
+;; (defn format-report
+;;   "Returns string"
+;;   [[_ & reports]]
+;;   (str (now)
+;;        "\n"
+;;        (str/join  (mapv format-one reports))))
 
 ;; 🔵 🟡 🔴
 ;; warn :day 25
 ;;      :av1 {:type 1, :values [{:days 2, :average 81.8} {:days 7, :average 81.03} {:days 28, :average 81.03}]}
 ;;      :av2 {:type 1, :values [{:days 25, :average 81.03} {:days 75, :average 81.26}]}
-;       :sd2 {:type 1, :values [{:days 25, :sd 0.84} {:days 75, :sd 1.12}]}
+;;       :sd2 {:type 1, :values [{:days 25, :sd 0.84} {:days 75, :sd 1.12}]}
 (defn warn
   [day av1 av2 sd2]
   (let [days (->> av1 :values (mapv :days))
@@ -352,5 +352,5 @@
   :rcf)
 
 (defn -main
-  [& args]
+  [& _]
   (reports @users [1 76 77] [1 7 28] [25 75]))
