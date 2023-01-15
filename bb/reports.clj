@@ -237,7 +237,11 @@
   (mapv first ave1))
 
 (defn get-days2 [ave2]
-  (get-types ave2))
+  (debug "get-days2 ave2:" ave2)
+  (->> ave2
+      first
+      rest
+      (map first)))
 
 (defn get-data
   "format-one に渡すデータを作る"
@@ -276,7 +280,7 @@
   (debug sd2)
   (let [types (get-types ave1)
         days2 (get-days2 ave2)]
-    (debug "types" types "days2" days2)
+    (debug "make-report types:" types "days2:" days2)
     (for [type types]
       (let [_ (debug type type "ave1" ave1)
             warns (warn days2
