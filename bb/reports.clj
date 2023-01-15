@@ -24,6 +24,8 @@
 
 (def debug println) ; or log/debug
 
+(def lack "😰")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; utils
 (def cookie "reports.txt")
@@ -108,8 +110,8 @@
 (def hkimura (-> (filter #(= "hkimura" (:name %)) @users)
                  first))
 
-(def saga-user (-> (filter #(= 51 (:id %)) @users)
-                   first))
+;; (def saga-user (-> (filter #(= 51 (:id %)) @users)
+;;                    first))
 
 (defn fetch-measures
   "fetch measures via withing-client,
@@ -141,7 +143,7 @@
 (defn fetch-meas
   "Returns `id` measure `type` util today from `days` before."
   [{:keys [id type days]}]
-  ;; (debug "fetch-meas" id type days)
+  (log/info "fetch-meas" id type days)
   (mysql/execute!
    db
    ["select measure, created from meas
@@ -159,9 +161,9 @@
   "Fetch user id's averaged data.
    when want user id 51's type 1 and 77 in 1, 7 and 28 days averaged value,
    (fetch-average 51 [1 77] [1 7 28])
-   if data lacks, returns [[d \"--\"] ...]"
+   if data lacks, returns [[d (lack-symbol)] ...]"
   [{:keys [id]} types days]
-  (debug "fetch-average" id types days)
+  (log/info "fetch-average" id types days)
   (vec
    (for [type types]
      {:type type
@@ -170,7 +172,7 @@
                 (let [xs (fetch-meas {:id id :type type :days day})]
                   {:days day
                    :average (if (empty? xs)
-                              "--"
+                              lack
                               (-> (map :meas/measure xs)
                                   average
                                   f-to-f))})))})))
@@ -179,9 +181,9 @@
   "Fetch user-id's sd values.
    when want user id 51's type 1 and 77 in 25 and 75 days SD value,
    (fetch-average 51 [1 77] [25 75])
-   if data lacks, returns [[d \"--\"] ...]"
+   if data lacks, returns [[d (lack-symbol)] ...]"
   [{:keys [id]} types days]
-  (debug "fetch-sd" id types days)
+  (log/info "fetch-sd" id types days)
   (vec
    (for [type types]
     {:type type
@@ -191,7 +193,7 @@
        (let [xs (fetch-meas {:id id :type type :days day})]
          {:days day
           :sd (if (empty? xs)
-                   "--"
+                   lack
                    (-> (map :meas/measure xs)
                        sd
                        f-to-f))})))})))
@@ -208,7 +210,7 @@
        (first days) "日前平均、"
        (second days) "日間平均、"
        (nth days 2) "日間平均です。"
-       "-- は欠測。\n"
+       lack "は欠測。\n"
        "先頭に🟡🔴がある場合は、"
        "1日前平均が25日平均、75日平均からの逸脱を表します。"))
 
@@ -235,12 +237,10 @@
   [type sd2]
   (get-averages type sd2))
 
-
-
 (defn format-one
   [{:keys [type values]}]
   (let [averages (mapv :average values)]
-    (debug "format-one" (kind type))
+    (log/info "format-one" (kind type))
     (str (kind type)
          "\n"
          (apply str (interpose ", " averages))
@@ -280,12 +280,12 @@
     ;; (debug "\t" :value value)
     ;; (debug "\t" :mean mean)
     ;; (debug "\t" :sd sd)
-    (debug :warn :value value :mean mean :sd sd)
-    (if (or (= value "--") (= mean "--") (= sd "--"))
-      "-"
+    (log/info "warn" :value value :mean mean :sd sd)
+    (if (or (= value lack) (= mean lack) (= sd lack))
+      lack
       (let [diff (abs (- value mean))]
         (cond
-          (< diff sd) "🔵"
+          (< diff sd) "🟢"
           (< diff (* 2 sd)) "🟡"
           :else "🔴")))))
 
@@ -295,7 +295,7 @@
 
 (defn make-report
   [av1 av2 sd2]
-  (debug "make-report")
+  (log/info "make-report")
   (let [types (get-types av1)
         days2 (get-days av2)]
     ;;(doall (for [type types]
@@ -304,7 +304,6 @@
                               (get-averages % av2)
                               (get-sd       % sd2))
                  report (format-one (get-averages % av1))]
-             ;; (debug "\t" :type % :warns warns :report report)
              (debug :warns warns)
              (debug :report report)
              (str (str/join warns) report)) types)))
@@ -327,7 +326,7 @@
   "send-report takes two arguments."
   [{:keys [name bot_name]} text]
   (let [url (str lp "/api/push")]
-    (debug url name bot_name)
+    (log/info "send-report" url name bot_name)
     (curl/post url
                {:form-params {:name name
                               :bot bot_name
@@ -335,7 +334,7 @@
                 :follow-redirects false})))
 
 (defn reports
-  "(format-report) の戻り値にヘルプメッセージを出して送信。
+  "ヘルプメッセージをくっつけて LINE push.
    nosend をつけて呼ぶと送信しない。"
   [users types days days2 & nosend]
   (doseq [user users]
@@ -349,7 +348,7 @@
 
 (comment
   (reports [hkimura] [1 76 77] [1 7 28] [25 75] :debug)
-  (reports [hkimura] [1 76 77] [1 7 28] [25 75])
+  (reports [hkimura] [1 76 77] [10 7 28] [25 75])
   :rcf)
 
 (defn -main
