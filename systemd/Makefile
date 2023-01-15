@@ -1,7 +1,8 @@
 SYSTEMD=/lib/systemd/system/
 SERVICE=withings-reports.service
 TIMER=withings-reports.timer
-install: copy
+
+install: copy start
 
 copy: ${SERVICE} ${TIMER}
 	sudo cp $? ${SYSTEMD}
