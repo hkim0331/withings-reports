@@ -289,7 +289,7 @@
       ""
       (let [diff (abs (- value mean))]
         (cond
-          (< diff sd) "_"
+          (< diff sd) "🔵"
           (< diff (* 2 sd)) "🟡"
           :else "🔴")))))
 
@@ -308,12 +308,13 @@
                          (get-sd       type sd2))
             report (format-one (get-averages type av1))]
         (debug "\t" :type type :warns warns :report report)
-        [warns report]))))
+        (str (str/join warns) report)))))
 
 (comment
-  (def av1 (fetch-average saga-user [1 76 77] [2 7 28]))
-  (def av2 (fetch-average saga-user [1 76 77] [25 75]))
-  (def sd2 (fetch-sd saga-user [1 76 77] [25 75]))
+  (def ex-user hkimura)
+  (def av1 (fetch-average ex-user [1 76 77] [2 7 28]))
+  (def av2 (fetch-average ex-user [1 76 77] [25 75]))
+  (def sd2 (fetch-sd ex-user [1 76 77] [25 75]))
   ;;(get-types av1)
   ;;(get-days av1)
   (format-one (get-averages 1 av1))
@@ -338,19 +339,23 @@
 
 (defn reports
   "(format-report) の戻り値にヘルプメッセージを出して送信。"
-  [users types days]
+  [users types days days2]
   (doseq [user users]
     (send-report user
                  (str
-                  (format-report (fetch-average user types days))
+                  (make-report
+                   (fetch-average user types days)
+                   (fetch-average user types days2)
+                   (fetch-sd      user types days2))
                   "\n"
                   (help days)))))
 
 (comment
-  (reports [hkimura] [1 76 77] [1 7 28])
-  ;;(reports @admins [1 76 77] [1 7 28])
+  (reports [hkimura] [1 76 77] [1 7 28] [25 75])
   :rcf)
-@users
+
+
 (defn -main
   [& args]
-  (reports @users [1 76 77] [1 7 28]))
+  (reports @users [1 76 77] [1 7 28] [25 75]))
+ 
