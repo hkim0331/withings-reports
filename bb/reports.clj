@@ -251,45 +251,37 @@
    (debug "\tret:" ret)
    ret))
 
-;; (defn get-type [a]
-;;   (first a))
-
-;; (defn get-value [a]
-;;   (-> a second second))
-
-;; (defn get-mean [av2 type days]
-;;   (->> av2
-;;        (filter #(= type (first %)))
-;;        (filter #(= days (first %)))
-;;        second))
-
-;; (defn get-sd [sd type days]
-;;   (get-mean sd type days))
-
+;; 🔵 🟡 🔴
+;; warn 25 ([1 --] [7 51.04] [28 51.04])
+;;         ([25 51.04] [75 49.5])
+;;         ((76 [25 0.74] [75 1.41]) (77 [25 0.81] [75 1.77]))
 
 (defn warn
-  "av1, av2, sd2 は ave1, ave2, sd2 よりも１レベル細かい。"
+  [day [_ & av1] [_ & av2] [_ & sd2]]
+  (debug "warn" day av1 av2 sd2)
+  
+  "🔵")
+
+(defn warns
   [days2 av1 av2 sd2]
-  (debug "warn" days2 av1 av2 sd2)
-  )
+  (mapv #(warn % av1 av2 sd2) days2))
 
 (defn make-report
   [ave1 ave2 sd2]
-  (debug ave1)
-  (debug ave2)
-  (debug sd2)
+  (debug :ave1 ave1)
+  (debug :ave2 ave2)
+  (debug :sd2 sd2)
   (let [types (get-types ave1)
         days2 (get-days2 ave2)]
     (debug "make-report types:" types "days2:" days2)
     (for [type types]
-      (let [_ (debug type type "ave1" ave1)
-            warns (warn days2
+      (let [warns (warns days2
                         (get-data type ave1) ;;
                         (get-data type ave2)
-                        (get-data type sd2))
+                        sd2)
             data (format-one [type (get-data type ave1)])]
         (debug "\t" "type" type "warns" warns "data" data)
-        (str warns data)))))
+        [warns data]))))
 
 (comment
   ;;(debug "hello" "world" 3.14)
@@ -301,7 +293,7 @@
     (get-data 1 av1))
   ;;
   (make-report
-   (fetch-average saga-user [1 76 77] [1 7 28])
+   (fetch-average saga-user [1 76 77] [2 7 28])
    (fetch-average saga-user [1 76 77] [25 75])
    (fetch-sd saga-user [1 76 77] [25 75]))
   ;;
