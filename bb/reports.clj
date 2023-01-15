@@ -349,6 +349,7 @@
 
 (comment
   (reports [hkimura] [1 76 77] [1 7 28] [25 75] :debug)
+  (reports [hkimura] [1 76 77] [1 7 28] [25 75])
   :rcf)
 
 (defn -main

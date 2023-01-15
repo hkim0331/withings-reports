@@ -4,6 +4,12 @@
 - bump-version.sh
 
 
+## 0.6.1 - 2023-01-15
+on kohhou with VScode remote ssh
+- updated systemd/Makefile
+- create /.env on kohhoh
+- gitignored /.env
+
 ## 0.6.0 - 2023-01-15
 - kohhou にデプロイ、テスト
 ### Added
