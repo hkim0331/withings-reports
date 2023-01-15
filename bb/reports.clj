@@ -238,28 +238,11 @@
   [type sd2]
   (get-averages type sd2))
 
-; 🔵 🟡 🔴
-;;warn 25 ([2 51.8] [7 51.04] [28 51.04])
-;;        ([25 51.04] [75 49.5])
-;;        ((76 [25 0.74] [75 1.41]) (77 [25 0.81] [75 1.77]))
-(defn warn
-  [day [_ & av1] [_ & av2] [_ & sd2]]
-  (debug "warn" day av1 av2 sd2)
-  (let [data (-> av1 first second)]
-    (if (= data "--")
-      ""
-      (let [mean (get-averages type av2)
-            sd   (get-sd day sd2)]))
-    "🔵"))
 
-(defn warns
-  [days2 av1 av2 sd2]
-  (mapv #(warn % av1 av2 sd2) days2))
 
 (defn format-one
   [{:keys [type values]}]
-  (let [days (mapv :days values)
-        averages (mapv :average values)]
+  (let [averages (mapv :average values)]
     (debug "format-one" (kind type))
     (str (kind type)
          "\n"
@@ -273,6 +256,25 @@
        "\n"
        (str/join  (mapv format-one reports))))
 
+
+; 🔵 🟡 🔴
+;;warn 25 ([2 51.8] [7 51.04] [28 51.04])
+;;        ([25 51.04] [75 49.5])
+;;        ((76 [25 0.74] [75 1.41]) (77 [25 0.81] [75 1.77]))
+(defn warn
+  [day av1 av2 sd2]
+  (debug "warn" day av1 av2 sd2)
+  (let [data (-> av1 first second)]
+    (if (= data "--")
+      ""
+      (let [mean (get-averages type av2)
+            sd   (get-sd day sd2)]))
+    "🔵"))
+
+(defn warns
+  [days2 av1 av2 sd2]
+  (mapv #(warn % av1 av2 sd2) days2))
+
 (defn make-report
   [av1 av2 sd2]
   (let [types (get-types av1)
@@ -282,22 +284,26 @@
                          (get-averages type av1) ;;
                          (get-averages type av2)
                          (get-sd       type sd2))
-            data (format-one (get-averages type av1))]
-        (debug "\t" "type" type "warns" warns "data" data)
-        [warns data]))))
+            report (format-one (get-averages type av1))]
+        (debug "\t" :type type :warns warns :report report)
+        [warns report]))))
 
 (comment
   (def av1 (fetch-average saga-user [1 76 77] [2 7 28]))
   (def av2 (fetch-average saga-user [1 76 77] [25 75]))
   (def sd2 (fetch-sd saga-user [1 76 77] [25 75]))
-  (get-types av1)
-  (get-days av1)
-  (get-days av2)
-  (get-averages 77 av1)
-  (get-averages 76 av2)
+  ;;(get-types av1)
+  ;;(get-days av1)
   (format-one (get-averages 1 av1))
-  (make-report av1 av2 sd2)
- :rcf)
+  (warns
+   (get-days av2)
+   (get-averages 1 av1)
+   (get-averages 1 av2)
+   (get-sd 1 sd2))
+  ;;(make-report av1 av2 sd2)
+  :rcf)
+
+
 
 (defn send-report
   "send-report takes two arguments."
