@@ -301,14 +301,14 @@
   [av1 av2 sd2]
   (let [types (get-types av1)
         days2 (get-days av2)]
-    (for [type types]
-      (let [warns (warns days2
-                         (get-averages type av1) ;;
-                         (get-averages type av2)
-                         (get-sd       type sd2))
-            report (format-one (get-averages type av1))]
-        (debug "\t" :type type :warns warns :report report)
-        (str (str/join warns) report)))))
+    (doall (for [type types]
+             (let [warns (warns days2
+                                (get-averages type av1) ;;
+                                (get-averages type av2)
+                                (get-sd       type sd2))
+                   report (format-one (get-averages type av1))]
+               (debug "\t" :type type :warns warns :report report)
+               (str (str/join warns) report))))))
 
 (comment
   (def ex-user hkimura)
@@ -341,14 +341,16 @@
   "(format-report) の戻り値にヘルプメッセージを出して送信。"
   [users types days days2]
   (doseq [user users]
-    (send-report user
-                 (str
-                  (make-report
-                   (fetch-average user types days)
-                   (fetch-average user types days2)
-                   (fetch-sd      user types days2))
-                  "\n"
-                  (help days)))))
+    (let [report (make-report
+                  (fetch-average user types days)
+                  (fetch-average user types days2)
+                  (fetch-sd      user types days2))]
+      (debug :report report)
+      (send-report user
+                   (str
+                    report
+                    "\n"
+                    (help days))))))
 
 (comment
   (reports [hkimura] [1 76 77] [1 7 28] [25 75])
