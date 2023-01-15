@@ -26,6 +26,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; utils
+(def cookie "reports.txt")
+
 (defn curl-get [url & params]
   (curl/get url {:raw-args (vec (concat ["-b" cookie] params))}))
 
@@ -75,7 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; login, users, measures
-(def cookie "reports.txt")
+
 (def users (atom nil))
 (def measures (atom nil))
 
@@ -106,7 +108,6 @@
 (def hkimura (-> (filter #(= "hkimura" (:name %)) @users)
                  first))
 
-;; must use with caution
 (def saga-user (-> (filter #(= 51 (:id %)) @users)
                    first))
 
@@ -153,8 +154,6 @@
 (comment
   (fetch-meas {:id 16 :type 1 :days 75})
   :rcf)
-
-
 
 (defn fetch-average
   "Fetch user id's averaged data.
@@ -335,20 +334,32 @@
                 :follow-redirects false})))
 
 (defn reports
-  "(format-report) の戻り値にヘルプメッセージを出して送信。"
-  [users types days days2]
+  "(format-report) の戻り値にヘルプメッセージを出して送信。
+   nosend をつけて呼ぶと送信しない。"
+  [users types days days2 & nosend]
   (doseq [user users]
     (let [av1 (fetch-average user types days)
           av2 (fetch-average user types days2)
           sd2 (fetch-sd      user types days2)
           report (str/join (make-report av1 av2 sd2))]
-      (debug :report report)
-      #_(send-report user (str report "\n" (help days))))))
+      (if nosend
+        (debug :report report)
+        (send-report user (str report "\n" (help days)))))))
 
 (comment
-  (reports [saga-user] [1 76 77] [1 7 28] [25 75])
+  (reports [hkimura] [1 76 77] [1 7 28] [25 75])
   :rcf)
 
 (defn -main
   [& args]
   (reports @users [1 76 77] [1 7 28] [25 75]))
+
+(comment
+  (defn f [_ & debug]
+    (if debug
+      :develop
+      :production))
+  (f 1)
+  (f 1 true)
+  (f 1 false)
+  :rcf)
