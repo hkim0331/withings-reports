@@ -244,23 +244,35 @@
       (map first)))
 
 (defn get-data
-  "format-one に渡すデータを作る"
+  "format-one に渡すデータを作る。
+   (get-data 77 av1) => (77 [25 51.04] [75 49.5])"
   [type data]
- (let [ret (first (filter #(= type (first %)) data))]
-   (debug "get-data" type data)
-   (debug "\tret:" ret)
-   ret))
+  (let [ret (first (filter #(= type (first %)) data))]
+    (debug "get-data" type data)
+    (debug "\tret:" ret)
+    ret))
 
 ;; 🔵 🟡 🔴
-;; warn 25 ([1 --] [7 51.04] [28 51.04])
-;;         ([25 51.04] [75 49.5])
-;;         ((76 [25 0.74] [75 1.41]) (77 [25 0.81] [75 1.77]))
+;;warn 25 ([2 51.8] [7 51.04] [28 51.04])
+;;        ([25 51.04] [75 49.5])
+;;        ((76 [25 0.74] [75 1.41]) (77 [25 0.81] [75 1.77]))
+(defn get-mean
+  [day data]
+  (filter #(= day (first %) data)))
+
+(defn get-sd
+  [day data]
+  (filter #(= day (first %) data)))
 
 (defn warn
   [day [_ & av1] [_ & av2] [_ & sd2]]
   (debug "warn" day av1 av2 sd2)
-  
-  "🔵")
+  (let [data (-> av1 first second)]
+    (if (= data "--")
+      ""
+      (let [mean (get-mean day av2)
+            sd   (get-sd day sd2)]))
+     "🔵"))
 
 (defn warns
   [days2 av1 av2 sd2]
