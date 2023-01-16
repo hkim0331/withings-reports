@@ -3,6 +3,9 @@
 /.lsp/.cache
 /db-dumps/
 /install/
+/log/*
+!/log/.placeholder
 cookie.txt
 reports.txt
 curl.sh
+/.env

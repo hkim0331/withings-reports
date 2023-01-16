@@ -1,0 +1,14 @@
+[Unit]
+Description=Send Withings repots to Saga athletes
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/withings-reports
+EnvironmentFile=/home/ubuntu/withings-reports/.env
+ExecStart=/usr/local/bin/bb -m withings-reports.reports
+StandardOutput=append:log/reports.log
+StandardError=append:log/reports.log
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target
