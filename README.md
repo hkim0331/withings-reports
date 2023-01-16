@@ -9,6 +9,12 @@ launch periodically from systemd.
 - systemd(linux)
   if macOS, `systemd` can be replaced by `launch daemon` or `launch agent`.
 
+## usage
+
+  % bb -m withings-reports.reports
+
+'-' は '_' にすると動かない。引数はパスではなく、ネームスペース。
+
 ## Memo
 
 ```
