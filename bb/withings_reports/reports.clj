@@ -1,4 +1,4 @@
-(ns reports
+(ns withings-reports.reports
   (:require
    [babashka.curl :as curl]
    [babashka.pods :as pods]
@@ -352,5 +352,6 @@
   :rcf)
 
 (defn -main
-  [& _]
+  [& _args]
+  #_(reports [hkimura] [1 76 77] [1 7 28] [25 75])
   (reports @users [1 76 77] [1 7 28] [25 75]))
