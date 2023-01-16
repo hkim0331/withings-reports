@@ -2,6 +2,28 @@
 
 ## Unreleased
 - bump-version.sh
+- could not find namespace: main
+```
+Jan 16 09:00:01 kohhoh systemd[1]: Started Send Withings repots to Saga athletes.
+Jan 16 09:00:01 kohhoh bb[2467665]: ----- Error --------------------------------------------------------------------
+Jan 16 09:00:01 kohhoh bb[2467665]: Type:     java.lang.Exception
+Jan 16 09:00:01 kohhoh bb[2467665]: Message:  Could not find namespace: main.
+Jan 16 09:00:01 kohhoh bb[2467665]: Location: <expr>:1:10
+Jan 16 09:00:01 kohhoh bb[2467665]: ----- Context ------------------------------------------------------------------
+Jan 16 09:00:01 kohhoh bb[2467665]: 1: (ns user (:require [main])) (apply main/-main *command-line-args*)
+Jan 16 09:00:01 kohhoh bb[2467665]:             ^--- Could not find namespace: main.
+Jan 16 09:00:01 kohhoh bb[2467665]: ----- Stack trace --------------------------------------------------------------
+Jan 16 09:00:01 kohhoh bb[2467665]: user - <expr>:1:10
+Jan 16 09:00:01 kohhoh systemd[1]: withings-reports.service: Main process exited, code=exited, status=1/FAILURE
+Jan 16 09:00:01 kohhoh systemd[1]: withings-reports.service: Failed with result 'exit-code'.
+Jan 16 09:00:01 kohhoh CRON[2467662]: (CRON) info (No MTA installed, discarding output)
+```
+- 不変分散だと分母がn-1でゼロワリ発生するケースが増える
+- doseq を pmap で並列化する
+
+
+## 0.7.0-SNAPSHOT
+- /log/.placeholder
 
 ## 0.6.2 - 2023-01-15
 - log の整理
