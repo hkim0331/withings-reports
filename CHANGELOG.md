@@ -18,16 +18,30 @@ Jan 16 09:00:01 kohhoh systemd[1]: withings-reports.service: Main process exited
 Jan 16 09:00:01 kohhoh systemd[1]: withings-reports.service: Failed with result 'exit-code'.
 Jan 16 09:00:01 kohhoh CRON[2467662]: (CRON) info (No MTA installed, discarding output)
 ```
-- 不変分散だと分母がn-1でゼロワリ発生するケースが増える
-- doseq を pmap で並列化する
+- doseq を pmap で並列化する(ユーザ増えたらでいい)
 
-
-## 0.7.0-SNAPSHOT
+## 0.7.0 - 2023-01-16
+## Added
 - /log/.placeholder
+  withings-reports.service の [service] セクションに以下を追加
+
+```
+  StandardOutput=append:log/reports.log
+  StandardError=append:log/reports.log
+```
+## Fixed
+- 不変分散だと分母がn-1でゼロワリ発生するケースが増える
+  => try~catch で捕まえ 0 を返す。
+- reports.clj スクリプトの実行の仕方。
+  bb/withings_reports/reports.clj とし、
+
+  % bb -m withings-reports.reports
+
+  これで、withings-reports.reports ネームスペースの -main 関数を起動する。
 
 ## 0.6.2 - 2023-01-15
 - log の整理
-- lack icon の選択 😨, 😱, 😰, 🌚, 💤, 🤢, 👻, 👎, 
+- lack icon の選択 😨, 😱, 😰, 🌚, 💤, 🤢, 👻, 👎,
 ## 0.6.1 - 2023-01-15
 on kohhou with VScode remote ssh
 - updated systemd/Makefile

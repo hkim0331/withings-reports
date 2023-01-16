@@ -64,12 +64,19 @@
 
 (defn sq [x] (* x x))
 
+;; FIXME: denominator = n-1 だとエラーのケースが増える。
+;;        エラーになった時どうする？
 (defn sd
   "return Standard Deviation. denominator = n-1."
   [xs]
   (let [x-bar (average xs)
         n (- (count xs) 1)]
-    (sqrt (/ (reduce + (map #(sq (- x-bar %)) xs)) n))))
+    (try
+      (sqrt (/ (reduce + (map #(sq (- x-bar %)) xs)) n))
+      (catch Exception e
+        (do
+          (log/info "sd" (.getMessage e))
+          0)))))
 
 (comment
   (f-to-f 3.14159265)
@@ -353,5 +360,5 @@
 
 (defn -main
   [& _args]
-  #_(reports [hkimura] [1 76 77] [1 7 28] [25 75])
-  (reports @users [1 76 77] [1 7 28] [25 75]))
+  (reports [hkimura] [1 76 77] [1 7 28] [25 75] :debug)
+  #_(reports @users [1 76 77] [1 7 28] [25 75]))
