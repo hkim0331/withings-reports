@@ -363,5 +363,4 @@
 
 (defn -main
   [& _args]
-  (reports [hkimura] [1 76 77] [1 7 28] [25 75] :debug)
-  #_(reports @users [1 76 77] [1 7 28] [25 75]))
+  (reports @users [1 76 77] [1 7 28] [25 75]))
