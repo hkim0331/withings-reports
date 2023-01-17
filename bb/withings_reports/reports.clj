@@ -340,7 +340,6 @@
                               :text text}
                 :follow-redirects false})))
 
-;; pmap で並列化とともに、エラー回避できないか？
 (defn reports
   "ヘルプメッセージをくっつけて LINE push.
    nosend をつけて呼ぶと送信しない。"
@@ -364,5 +363,4 @@
 
 (defn -main
   [& _args]
-  (reports [hkimura] [1 76 77] [1 7 28] [25 75] :debug)
-  #_(reports @users [1 76 77] [1 7 28] [25 75]))
+  (reports @users [1 76 77] [1 7 28] [25 75]))
