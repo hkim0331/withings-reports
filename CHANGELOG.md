@@ -2,23 +2,28 @@
 
 ## Unreleased
 - bump-version.sh
-- could not find namespace: main
-```
-Jan 16 09:00:01 kohhoh systemd[1]: Started Send Withings repots to Saga athletes.
-Jan 16 09:00:01 kohhoh bb[2467665]: ----- Error --------------------------------------------------------------------
-Jan 16 09:00:01 kohhoh bb[2467665]: Type:     java.lang.Exception
-Jan 16 09:00:01 kohhoh bb[2467665]: Message:  Could not find namespace: main.
-Jan 16 09:00:01 kohhoh bb[2467665]: Location: <expr>:1:10
-Jan 16 09:00:01 kohhoh bb[2467665]: ----- Context ------------------------------------------------------------------
-Jan 16 09:00:01 kohhoh bb[2467665]: 1: (ns user (:require [main])) (apply main/-main *command-line-args*)
-Jan 16 09:00:01 kohhoh bb[2467665]:             ^--- Could not find namespace: main.
-Jan 16 09:00:01 kohhoh bb[2467665]: ----- Stack trace --------------------------------------------------------------
-Jan 16 09:00:01 kohhoh bb[2467665]: user - <expr>:1:10
-Jan 16 09:00:01 kohhoh systemd[1]: withings-reports.service: Main process exited, code=exited, status=1/FAILURE
-Jan 16 09:00:01 kohhoh systemd[1]: withings-reports.service: Failed with result 'exit-code'.
-Jan 16 09:00:01 kohhoh CRON[2467662]: (CRON) info (No MTA installed, discarding output)
-```
 - doseq を pmap で並列化する(ユーザ増えたらでいい)
+- log の整理: fetch-mea を log/debug に落とすか？
+
+## 0.7.1 - 2023-01-17
+### FIXED
+- 1 のデータが反映していない（hkimura）: withings-cache のデータ取得が間に合ってない。JST か？
+- systemd でエラーの原因は、ログに指定したファイルが絶対パスになってないこと。
+```
+Jan 17 09:00:02 kohhoh systemd[1]: withings-reports.timer: Failed to queue unit startup job: Unit withings-reports.service has a bad unit file setting.
+Jan 17 09:00:02 kohhoh systemd[1]: withings-reports.timer: Failed with result 'resources'.
+
+Jan 16 09:00:01 kohhoh.jp systemd[1]: withings-reports.service: Main process exited, code=exited, status=1/FAILURE
+Jan 16 09:00:01 kohhoh.jp systemd[1]: withings-reports.service: Failed with result 'exit-code'.
+Jan 16 12:55:03 kohhoh.jp systemd[1]: /lib/systemd/system/withings-reports.service:9: StandardOutput= path is not absolute: log/reports.log
+```
+- ループ中でエラーになった時。
+```
+        (try
+          (send-report user (str report "\n" (help days)))
+          (catch Exception e
+            (log/info "reports error:" (.getMessage e))))
+```
 
 ## 0.7.0 - 2023-01-16
 ## Added
