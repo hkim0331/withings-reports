@@ -351,7 +351,10 @@
           report (str/join (make-report av1 av2 sd2))]
       (if nosend
         (debug :report report)
-        (send-report user (str report "\n" (help days)))))))
+        (try
+          (send-report user (str report "\n" (help days)))
+          (catch Exception e
+            (log/info "reports error:" (.getMessage e))))))))
 
 (comment
   (reports [hkimura] [1 76 77] [1 7 28] [25 75] :debug)
