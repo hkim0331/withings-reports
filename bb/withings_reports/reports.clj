@@ -18,9 +18,14 @@
          :password (System/getenv "MYSQL_PASSWORD")})
 
 (def wc (System/getenv "WC"))
-(def lp (System/getenv "LP"))
 (def admin    (System/getenv "WC_LOGIN"))
 (def password (System/getenv "WC_PASSWORD"))
+(def cookie "reports.txt")
+
+(def lp (System/getenv "LP"))
+(def lp_user     (System/getenv "LINE_LOGIN"))
+(def lp_password (System/getenv "LINE_PASSWORD"))
+(def lp_cookie "lp_cookie.txt")
 
 (def debug println) ; or log/debug
 
@@ -28,14 +33,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; utils
-(def cookie "reports.txt")
 
 (defn curl-get [url & params]
   (curl/get url {:raw-args (vec (concat ["-b" cookie] params))}))
 
-;; push line-push only
+;; ;;push line-push only
 ;; (defn curl-post [url & params]
-;;   (curl/post url {:raw-args (vec (concat ["-b" cookie] params))}))
+;;   (curl/post url {:raw-args (vec (concat ["-b" lp_cookie] params))}))
 
 (defn today []
   (-> (sh "date" "+%F")
@@ -97,6 +101,20 @@
         params (str "login=" admin "&password=" password)]
     (curl/post api {:raw-args ["-c" cookie "-d" params]
                     :follow-redirects false})))
+
+
+(defn lp_login
+  []
+  (let [api (str lp "/")
+        params (str "login=" lp_user "&password=" lp_password)
+        ret (curl/post api {:raw-args ["-c" lp_cookie "-d" params]
+                            :follow-redirects false})]
+    (log/info "lp_login:" ret)
+    ret))
+
+(comment
+  (lp_login)
+  :rcf)
 
 (defn fetch-users
   "fetch users via withing-client,
@@ -335,15 +353,20 @@
   (let [url (str lp "/api/push")]
     (log/info "send-report" url name bot_name)
     (curl/post url
-               {:form-params {:name name
+               {:raw-args (vec (concat ["-b" lp_cookie]))
+                :form-params {:name name
                               :bot bot_name
                               :text text}
                 :follow-redirects false})))
 
+;; FIXME: lp_login は throw してこない。
 (defn reports
   "ヘルプメッセージをくっつけて LINE push.
    nosend をつけて呼ぶと送信しない。"
   [users types days days2 & nosend]
+  (try
+    (lp_login)
+    (catch Exception e (log/info "reports:exception" (.getMessage e))))
   (doseq [user users]
     (let [av1 (fetch-average user types days)
           av2 (fetch-average user types days2)

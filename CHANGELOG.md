@@ -6,6 +6,10 @@
 - log の整理: fetch-mea を log/debug に落とすか？
 
 
+## 0.8.0 - 2023-01-23
+### Added
+- lp_login: report の前にログインし、認証を受ける。
+
 ## 0.7.2 - 2023-01-17
 ### Fixed
 - main のコメント外し忘れ。
