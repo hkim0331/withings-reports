@@ -137,6 +137,7 @@
 
 (def ishii (-> (filter #(= "ishii" (:name %)) @users)
                  first))
+
 ;; (def saga-user (-> (filter #(= 51 (:id %)) @users)
 ;;                    first))
 
@@ -243,6 +244,7 @@
 
 (defn help
   [days]
+  (log/info "days" days)
   "説明 → wc.kohhoh.jp/help/")
 
 ;; make-report
@@ -377,11 +379,12 @@
     (let [av1 (fetch-average user types days)
           av2 (fetch-average user types days2)
           sd2 (fetch-sd      user types days2)
-          report (str/join (make-report av1 av2 sd2))]
+          report (str/join (make-report av1 av2 sd2))
+          report-with-help (str report "\n" (help days))]
       (if nosend
-        (debug :report report)
+        (debug :report report-with-help)
         (try
-          (send-report user (str report "\n" (help days)))
+          (send-report user report-with-help)
           (catch Exception e
             (log/info "reports error:" (.getMessage e))))))))
 
