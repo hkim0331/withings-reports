@@ -168,7 +168,7 @@
 (defn fetch-meas
   "Returns `id` measure `type` util today from `days` before."
   [{:keys [id type days]}]
-  (log/info "fetch-meas" id type days)
+  ;; (log/info "fetch-meas" id type days)
   (mysql/execute!
    db
    ["select measure, created from meas
@@ -381,7 +381,7 @@
 
 (comment
   (reports [hkimura] [1 76 77] [1 7 28] [25 75] :debug)
-  (reports [hkimura] [1 76 77] [10 7 28] [25 75])
+  (reports [hkimura] [1 76 77] [1 7 28] [25 75] :debug)
   :rcf)
 
 (defn -main
