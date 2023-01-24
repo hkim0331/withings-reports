@@ -37,8 +37,8 @@
 (defn curl-get [url & params]
   (curl/get url {:raw-args (vec (concat ["-b" cookie] params))}))
 
-;; ;;push line-push only
-;; (defn curl-post [url & params]
+;; push line-push only
+;; (defn line-push [url & params]
 ;;   (curl/post url {:raw-args (vec (concat ["-b" lp_cookie] params))}))
 
 (defn today []
@@ -229,15 +229,19 @@
    (fetch-sd {:id 16} [1 77 78] [25 75])]
   :rcf)
 
+;; (defn help
+;;   [days]
+;;   (str "項目の下の3つの数字はそれぞれ"
+;;        (first days) "日前平均、"
+;;        (second days) "日間平均、"
+;;        (nth days 2) "日間平均です。"
+;;        lack "は欠測。\n"
+;;        "先頭に🟡🔴がある場合は、"
+;;        "1日前平均が25日平均、75日平均からの逸脱を表します。"))
+
 (defn help
   [days]
-  (str "項目の下の3つの数字はそれぞれ"
-       (first days) "日前平均、"
-       (second days) "日間平均、"
-       (nth days 2) "日間平均です。"
-       lack "は欠測。\n"
-       "先頭に🟡🔴がある場合は、"
-       "1日前平均が25日平均、75日平均からの逸脱を表します。"))
+  "説明 → wc.kohhoh.jp/help/")
 
 ;; make-report
 (defn get-types [av1]
@@ -353,10 +357,10 @@
   (let [url (str lp "/api/push")]
     (log/info "send-report" url name bot_name)
     (curl/post url
-               {:raw-args (vec (concat ["-b" lp_cookie]))
-                :form-params {:name name
+               {:form-params {:name name
                               :bot bot_name
                               :text text}
+                :raw-args (vec (concat ["-b" lp_cookie]))
                 :follow-redirects false})))
 
 ;; FIXME: lp_login は throw してこない。

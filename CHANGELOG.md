@@ -4,7 +4,10 @@
 - bump-version.sh
 - doseq を pmap で並列化する(ユーザ増えたらでいい)
 - log の整理: fetch-mea を log/debug に落とすか？
+- wc.kohhoh.jp のアドレスを伏せたい。
 
+## 0.8.1 - 2023-01-23
+- https://wc.kohhoh.jp へのリンク
 
 ## 0.8.0 - 2023-01-23
 ### Added
