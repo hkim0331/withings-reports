@@ -171,7 +171,7 @@ ishii
 (defn fetch-meas
   "Returns `id` measure `type` util today from `days` before."
   [{:keys [id type days]}]
-  (log/info "fetch-meas" id type days)
+  ;; (log/info "fetch-meas" id type days)
   (mysql/execute!
    db
    ["select measure, created from meas
@@ -244,6 +244,7 @@ ishii
 
 (defn help
   [days]
+  (log/info "days" days)
   "説明 → wc.kohhoh.jp/help/")
 
 ;; make-report
@@ -378,17 +379,18 @@ ishii
     (let [av1 (fetch-average user types days)
           av2 (fetch-average user types days2)
           sd2 (fetch-sd      user types days2)
-          report (str/join (make-report av1 av2 sd2))]
+          report (str/join (make-report av1 av2 sd2))
+          report-with-help (str report "\n" (help days))]
       (if nosend
-        (debug :report report)
+        (debug :report report-with-help)
         (try
-          (send-report user (str report "\n" (help days)))
+          (send-report user report-with-help)
           (catch Exception e
             (log/info "reports error:" (.getMessage e))))))))
 
 (comment
-  (reports [ishii] [1 76 77] [1 7 28] [25 75] :debug)
-  (reports [hkimura] [1 76 77] [10 7 28] [25 75])
+  (reports [hkimura] [1 76 77] [1 7 28] [25 75] :debug)
+  (reports [hkimura] [1 76 77] [1 7 28] [25 75])
   :rcf)
 
 (defn -main
