@@ -135,6 +135,9 @@
 (def hkimura (-> (filter #(= "hkimura" (:name %)) @users)
                  first))
 
+(def ishii (-> (filter #(= "ishii" (:name %)) @users)
+                 first))
+
 ;; (def saga-user (-> (filter #(= 51 (:id %)) @users)
 ;;                    first))
 
@@ -386,8 +389,8 @@
             (log/info "reports error:" (.getMessage e))))))))
 
 (comment
-  (reports [hkimura] [1 76 77] [1 7 28] [25 75] :debug)
   (reports [hkimura] [1 76 77] [1 7 28] [25 75])
+  (reports [ishii] [1 76 77] [1 7 28] [25 75] :debug)
   :rcf)
 
 (defn -main
