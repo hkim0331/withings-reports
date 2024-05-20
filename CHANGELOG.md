@@ -5,7 +5,7 @@
 - log の整理: fetch-mea を log/debug に落とすか？
 - wc.kohhoh.jp のアドレスを伏せたい。
 
-## v1.9-SNAPSHOT
+## v1.9.114 / 2024-05-21
 ### Added
 - bump-version.sh
 ### Changed
@@ -103,7 +103,7 @@ on kohhou with VScode remote ssh
 (defn fetch-meas [{:keys [id type days]}]...)
 ```
 
-## 0.2.4-SNAPSHOT
+## v1.9.114 / 2024-05-21
 - make-report
 
 ## 0.2.3 - 2023-01-03
