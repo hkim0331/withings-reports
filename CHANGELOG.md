@@ -1,14 +1,16 @@
 # Withings-Reports
 
 ## Unreleased
-- bump-version.sh
 - doseq を pmap で並列化する(ユーザ増えたらでいい)
 - log の整理: fetch-mea を log/debug に落とすか？
 - wc.kohhoh.jp のアドレスを伏せたい。
-- 0.8.1 kohhoh に反映していない。
 
-## 0.8.2 - 2023-01-24
-- 
+## v1.9-SNAPSHOT
+### Added
+- bump-version.sh
+### Changed
+- org.babashka/mysql "0.1.2"
+
 ## 0.8.1 - 2023-01-23
 - https://wc.kohhoh.jp へのリンク
 

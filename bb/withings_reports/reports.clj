@@ -8,8 +8,10 @@
    [clojure.string :as str]
    [clojure.tools.logging :as log]))
 
-(pods/load-pod 'org.babashka/mysql "0.1.1")
+(pods/load-pod 'org.babashka/mysql "0.1.2")
+
 (require '[pod.babashka.mysql :as mysql])
+
 (def db {:dbtype   "mysql"
          :host     "localhost"
          :port     3306
@@ -17,12 +19,12 @@
          :user     (System/getenv "MYSQL_USER")
          :password (System/getenv "MYSQL_PASSWORD")})
 
-(def wc (System/getenv "WC"))
+(def wc "https://wc.kohhoh.jp")
 (def admin    (System/getenv "WC_LOGIN"))
 (def password (System/getenv "WC_PASSWORD"))
 (def cookie "reports.txt")
 
-(def lp (System/getenv "LP"))
+(def lp "https://lp.kohhoh.jp")
 (def lp_user     (System/getenv "LINE_LOGIN"))
 (def lp_password (System/getenv "LINE_PASSWORD"))
 (def lp_cookie "lp_cookie.txt")
@@ -37,24 +39,21 @@
 (defn curl-get [url & params]
   (curl/get url {:raw-args (vec (concat ["-b" cookie] params))}))
 
-;; push line-push only
-;; (defn line-push [url & params]
-;;   (curl/post url {:raw-args (vec (concat ["-b" lp_cookie] params))}))
+;; (defn today []
+;;   (-> (sh "date" "+%F")
+;;       :out
+;;       str/trim-newline))
 
-(defn today []
-  (-> (sh "date" "+%F")
-      :out
-      str/trim-newline))
+;; (defn now []
+;;   (-> (sh "date" "+%F %T")
+;;       :out
+;;       str/trim-newline))
 
-(defn now []
-  (-> (sh "date" "+%F %T")
-      :out
-      str/trim-newline))
-
-(comment
-  (today)
-  (now)
-  :rcf)
+;; (comment
+;;   ;; no use?
+;;   (today)
+;;   (now)
+;;   :rcf)
 
 (defn f-to-f [f]
   (-> f
@@ -102,7 +101,6 @@
     (curl/post api {:raw-args ["-c" cookie "-d" params]
                     :follow-redirects false})))
 
-
 (defn lp_login
   []
   (let [api (str lp "/")
@@ -135,11 +133,8 @@
 (def hkimura (-> (filter #(= "hkimura" (:name %)) @users)
                  first))
 
-(def ishii (-> (filter #(= "ishii" (:name %)) @users)
-                 first))
-
-;; (def saga-user (-> (filter #(= 51 (:id %)) @users)
-;;                    first))
+;; (def ishii (-> (filter #(= "ishii" (:name %)) @users)
+;;                first))
 
 (defn fetch-measures
   "fetch measures via withing-client,
@@ -162,16 +157,17 @@
 
 (comment
   @users
-  (first @users)
+  (first @users) ;=> {:valid true, :email "sa0727m@icloud.com",
   (second @users)
-  (kind 1)
-  (kind 77)
+  (kind 1) ;=> "体重 (kg)"
+  (kind 77) ;=> "Hydration (kg)"
   :rcf)
 
 (defn fetch-meas
-  "Returns `id` measure `type` util today from `days` before."
+  "Fetch meas from mysql database.
+   Returns `id` measure `type` util today from `days` before."
   [{:keys [id type days]}]
-  ;; (log/info "fetch-meas" id type days)
+  (log/info "fetch-meas" id type days)
   (mysql/execute!
    db
    ["select measure, created from meas
@@ -182,7 +178,7 @@
     id type days]))
 
 (comment
-  (fetch-meas {:id 16 :type 1 :days 75})
+  (fetch-meas {:id 115 :type 1 :days 75})
   :rcf)
 
 (defn fetch-average
@@ -196,14 +192,14 @@
    (for [type types]
      {:type type
       :values (vec
-              (for [day days]
-                (let [xs (fetch-meas {:id id :type type :days day})]
-                  {:days day
-                   :average (if (empty? xs)
-                              lack
-                              (-> (map :meas/measure xs)
-                                  average
-                                  f-to-f))})))})))
+               (for [day days]
+                 (let [xs (fetch-meas {:id id :type type :days day})]
+                   {:days day
+                    :average (if (empty? xs)
+                               lack
+                               (-> (map :meas/measure xs)
+                                   average
+                                   f-to-f))})))})))
 
 (defn fetch-sd
   "Fetch user-id's sd values.
@@ -214,22 +210,24 @@
   (log/info "fetch-sd" id types days)
   (vec
    (for [type types]
-    {:type type
-     :values
-     (vec
-      (for [day days]
-       (let [xs (fetch-meas {:id id :type type :days day})]
-         {:days day
-          :sd (if (empty? xs)
-                   lack
-                   (-> (map :meas/measure xs)
-                       sd
-                       f-to-f))})))})))
+     {:type type
+      :values
+      (vec
+       (for [day days]
+         (let [xs (fetch-meas {:id id :type type :days day})]
+           {:days day
+            :sd (if (empty? xs)
+                  lack
+                  (-> (map :meas/measure xs)
+                      sd
+                      f-to-f))})))})))
 
 (comment
-  [(fetch-average {:id 16} [1 77 78] [1 7 28])
-   (fetch-average {:id 16} [1 77 78] [25 75])
-   (fetch-sd {:id 16} [1 77 78] [25 75])]
+  ;;　梶山拓海
+  ;; Weight, Muscle Mass, Hydration
+  (fetch-average {:id 115} [1 76 77] [1 7 28])
+  (fetch-average {:id 115} [1 76 77] [25 75])
+  (fetch-sd {:id 115} [1 76 77] [25 75])
   :rcf)
 
 ;; (defn help
@@ -389,10 +387,10 @@
             (log/info "reports error:" (.getMessage e))))))))
 
 (comment
+  (reports [hkimura] [1 76 77] [1 7 28] [25 75] :debug)
   (reports [hkimura] [1 76 77] [1 7 28] [25 75])
-  (reports [ishii] [1 76 77] [1 7 28] [25 75] :debug)
   :rcf)
 
 (defn -main
-  [& _args]
-  (reports @users [1 76 77] [1 7 28] [25 75]))
+  [_]
+  (reports (fetch-users) [1 76 77] [1 7 28] [25 75]))
