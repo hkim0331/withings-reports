@@ -6,7 +6,7 @@
 - wc.kohhoh.jp のアドレスを伏せたい。
 - (first (filter ...)) は some で書き直せないか？
 
-## v1.9-SNAPSHOT
+## v1.9.118 / 2024-05-22
 - refactored `reports.clj`.
 
 ## v1.9.114 / 2024-05-21
