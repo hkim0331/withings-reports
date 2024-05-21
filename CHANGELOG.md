@@ -4,6 +4,10 @@
 - doseq を pmap で並列化する(ユーザ増えたらでいい)
 - log の整理: fetch-mea を log/debug に落とすか？
 - wc.kohhoh.jp のアドレスを伏せたい。
+- (first (filter ...)) は some で書き直せないか？
+
+## v1.9.118 / 2024-05-22
+- refactored `reports.clj`.
 
 ## v1.9.114 / 2024-05-21
 ### Added
