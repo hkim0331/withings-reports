@@ -7,13 +7,13 @@
 - wc.kohhoh.jp のアドレスを伏せたい。
 - (first (filter ...)) は some で書き直せないか？
 
-## v1.1-SNAPSHOT
+## v1.11-SNAPSHOT
 - gitignored .DS_Store
 - `git rm -r --cached .`
 ### Changed
 - reports takes 5th argument, true/false.
 
-## v1.0.123 / 2024-05-23
+## v1.10.123 / 2024-05-23
 - `.env` must exist. if not, the systemd service does not start.
 - used Environment instead of EnvironmentFile.
   after `git pull` on production(wakato),
