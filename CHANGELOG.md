@@ -1,11 +1,12 @@
 # Withings-Reports
 
 ## Unreleased
-- doseq を pmap で並列化する(ユーザ増えたらでいい)
 - log の整理: fetch-mea を log/debug に落とすか？
-- log level: INFO/DEBUG
+- log level: INFO/DEBUG. telemere?
 - wc.kohhoh.jp のアドレスを伏せたい。
-- (first (filter ...)) は some で書き直せないか？
+
+## v1.12-SNAPSHOT
+- systemd EnvironmentFile
 
 ## v1.11.131 / 2024-05-23
 - gitignored .DS_Store

@@ -4,12 +4,7 @@ Description=Send Withings repots to Saga athletes
 [Service]
 Type=simple
 WorkingDirectory=/home/ubuntu/withings-reports
-Environment=MYSQL_USER="***"
-Environment=MYSQL_PASSWORD="***"
-Environment=WC_LOGIN="***"
-Environment=WC_PASSWORD="***"
-Environment=LINE_LOGIN="***"
-Environment=LINE_PASSWORD="***"
+EnvironmentFile=/home/ubuntu/withings-reports/env
 ExecStart=/usr/local/bin/bb -m withings-reports.reports
 StandardOutput=append:/home/ubuntu/withings-reports/log/reports.log
 StandardError=append:/home/ubuntu/withings-reports/log/reports.log

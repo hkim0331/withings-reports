@@ -9,6 +9,6 @@ cookie.txt
 reports.txt
 lp_cookie.txt
 curl.sh
-/.env
+/env
 /.nrepl-port
 .DS_Store
