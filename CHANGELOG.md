@@ -3,12 +3,15 @@
 ## Unreleased
 - doseq を pmap で並列化する(ユーザ増えたらでいい)
 - log の整理: fetch-mea を log/debug に落とすか？
+- log level: INFO/DEBUG
 - wc.kohhoh.jp のアドレスを伏せたい。
 - (first (filter ...)) は some で書き直せないか？
 
 ## v1.1-SNAPSHOT
 - gitignored .DS_Store
 - `git rm -r --cached .`
+### Changed
+- reports takes 5th argument, true/false.
 
 ## v1.0.123 / 2024-05-23
 - `.env` must exist. if not, the systemd service does not start.
@@ -16,7 +19,6 @@
   after `git pull` on production(wakato),
   check the `systemd/withings-report.service`,
   then `make install start enable`.
-
 
 ## v1.9.118 / 2024-05-22
 - refactored `reports.clj`.
