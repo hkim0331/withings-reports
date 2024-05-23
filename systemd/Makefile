@@ -6,8 +6,7 @@ install: install start
 
 install:
 	sudo cp ${SERVICE} ${TIMER} ${SYSTEMD}
-
-sudo systemctl daemon-reload
+	sudo systemctl daemon-reload
 
 start:
 	sudo systemctl start ${TIMER}
