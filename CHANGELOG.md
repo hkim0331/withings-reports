@@ -5,6 +5,10 @@
 - log level: INFO/DEBUG. telemere?
 - wc.kohhoh.jp のアドレスを伏せたい。
 
+## v1.12.141 / 2024-05-23
+### Fixed
+- systemd/Makefile
+
 ## v1.12.136 / 2024-05-23
 - systemd EnvironmentFile
 
