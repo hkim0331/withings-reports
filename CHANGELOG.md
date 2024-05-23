@@ -6,9 +6,12 @@
 - wc.kohhoh.jp のアドレスを伏せたい。
 - (first (filter ...)) は some で書き直せないか？
 
-## v1.10.`git-rev`
+## v1.0.123 / 2024-05-23
 - `.env` must exist. if not, the systemd service does not start.
 - used Environment instead of EnvironmentFile.
+  after `git pull` on production(wakato),
+  check the `systemd/withings-report.service`,
+  then `make install start enable`.
 
 
 ## v1.9.118 / 2024-05-22
