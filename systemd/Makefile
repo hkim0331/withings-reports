@@ -4,9 +4,10 @@ TIMER=withings-reports.timer
 
 install: install start
 
-install: ${SERVICE} ${TIMER}
-	sudo cp $? ${SYSTEMD}
-	sudo systemctl daemon-reload
+install:
+	sudo cp ${SERVICE} ${TIMER} ${SYSTEMD}
+
+sudo systemctl daemon-reload
 
 start:
 	sudo systemctl start ${TIMER}
