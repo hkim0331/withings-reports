@@ -362,5 +362,5 @@
 
 
 (defn -main
-  [_]
+  [& args]
   (reports (fetch-users) [1 76 77] [1 7 28] [25 75]))

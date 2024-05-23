@@ -6,6 +6,11 @@
 - wc.kohhoh.jp のアドレスを伏せたい。
 - (first (filter ...)) は some で書き直せないか？
 
+## v1.10.`git-rev`
+- `.env` must exist. if not, the systemd service does not start.
+- used Environment instead of EnvironmentFile.
+
+
 ## v1.9.118 / 2024-05-22
 - refactored `reports.clj`.
 
