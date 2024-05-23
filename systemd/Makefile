@@ -15,4 +15,7 @@ stop:
 	sudo systemctl stop ${TIMER}
 
 enable:
+	sudo systemctl enable ${TIMER}
+
+disable:
 	sudo systemctl disable ${TIMER}
