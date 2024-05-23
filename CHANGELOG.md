@@ -7,7 +7,7 @@
 - wc.kohhoh.jp のアドレスを伏せたい。
 - (first (filter ...)) は some で書き直せないか？
 
-## v1.11-SNAPSHOT
+## v1.11.131 / 2024-05-23
 - gitignored .DS_Store
 - `git rm -r --cached .`
 ### Changed
