@@ -7,6 +7,8 @@
    [clojure.string :as str]
    [clojure.tools.logging :as log]))
 
+;; (log/set-config! {:min-level :info})
+
 (pods/load-pod 'org.babashka/mysql "0.1.2")
 
 (require '[pod.babashka.mysql :as mysql])
@@ -130,7 +132,7 @@
   "Fetch meas from mysql database.
    Returns `id` measure `type` util today from `days` before."
   [{:keys [id type days]}]
-  (log/info "fetch-meas" id type days)
+  (log/debug "fetch-meas" id type days)
   (mysql/execute!
    db
    ["select measure, created from meas
@@ -150,7 +152,7 @@
    (fetch-average 51 [1 77] [1 7 28])
    if data lacks, returns [[d (lack-symbol)] ...]"
   [{:keys [id]} types days]
-  (log/info "fetch-average" id types days)
+  (log/debug "fetch-average" id types days)
   (vec
    (for [type types]
      {:type type
@@ -170,7 +172,7 @@
    (fetch-average 51 [1 77] [25 75])
    if data lacks, returns [[d (lack-symbol)] ...]"
   [{:keys [id]} types days]
-  (log/info "fetch-sd" id types days)
+  (log/debug "fetch-sd" id types days)
   (vec
    (for [type types]
      {:type type
@@ -324,7 +326,7 @@
 ;; FIXME: lp_login does not throw.
 (defn reports
   "LINE push message. if send? "
-  [users types days days2 & debug?]
+  [users types days days2 send?]
   ;; (println "send?" debug?)
   (try
     (lp_login)
@@ -335,7 +337,7 @@
           sd2 (fetch-sd      user types days2)
           report (str/join (make-report av1 av2 sd2))
           report-with-help (str report "\n" (help days))]
-      (if-not debug?
+      (if send?
         (try
           (send-report user report-with-help)
           ;; (println "sent")
@@ -348,19 +350,22 @@
   (def users (fetch-users true))
   (def hkimura (-> (filter #(= "hkimura" (:name %)) users)
                    first))
-  (first users) ;=> {:valid true, :email "sa0727m@icloud.com",
+  (some #(= "hkimura" (:name %)) users)
+  (first users)
+  ;=> {:valid true, :email "sa0727m@icloud.com",
+
   (second users)
   (kind 1) ;=> "体重 (kg)"
   (kind 77) ;=> "Hydration (kg)"
 
   ;; send
-  (reports [hkimura] [1 76 77] [1 7 28] [25 75])
+  (reports [hkimura] [1 76 77] [1 7 28] [25 75] true)
   ;; no send
-  (reports [hkimura] [1 76 77] [1 7 28] [25 75] nil)
+  (reports [hkimura] [1 76 77] [1 7 28] [25 75] false)
 
   :rcf)
 
 
 (defn -main
-  [_]
-  (reports (fetch-users) [1 76 77] [1 7 28] [25 75]))
+  [& args]
+  (reports (fetch-users true) [1 76 77] [1 7 28] [25 75] true))
