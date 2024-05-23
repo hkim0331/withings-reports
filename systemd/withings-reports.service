@@ -6,8 +6,8 @@ Type=simple
 WorkingDirectory=/home/ubuntu/withings-reports
 Environment=MYSQL_USER="***"
 Environment=MYSQL_PASSWORD="***"
-Environment=MC_LOGIN="***"
-Environment=MC_PASSWORD="***"
+Environment=WC_LOGIN="***"
+Environment=WC_PASSWORD="***"
 Environment=LINE_LOGIN="***"
 Environment=LINE_PASSWORD="***"
 ExecStart=/usr/local/bin/bb -m withings-reports.reports

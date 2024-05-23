@@ -11,3 +11,4 @@ lp_cookie.txt
 curl.sh
 /.env
 /.nrepl-port
+.DS_Store
